@@ -18,7 +18,7 @@ import sqlite3
 
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["test_token"]
+token = config["token"]
 
 db_connection = None
 db_cursor = None
@@ -196,21 +196,21 @@ async def _yeet(ctx, should_kick):
 bot = commands.Bot(command_prefix="/")
 
 @bot.command()
-async def yeet_test(ctx):
+async def yeet(ctx):
     if ctx.author.bot:
         return
 
     await _yeet(ctx, False)
 
 @bot.command()
-async def yeet_kick_test(ctx):
+async def yeetkick(ctx):
     if ctx.author.bot:
         return
 
     await _yeet(ctx, True)
 
 @bot.command()
-async def yeet_score_test(ctx):
+async def yeetscore(ctx):
     yeet_score = 0
     has_yeet = 0
     been_yeet = 0
