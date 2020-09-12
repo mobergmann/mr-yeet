@@ -216,7 +216,12 @@ async def yeet_score_test(ctx):
     been_yeet = 0
 
     # get data from database
-    data = db_get_data(ctx.author.id)
+    data = None
+    try:
+        data = db_get_data(ctx.author.id)
+    except e:
+        log("Could no retrive database information of {}, because of {}".format(ctx.author, str(e)))
+    
     if data == None:
         data = [ctx.author.id, 0, 0]
 
@@ -233,11 +238,17 @@ async def yeet_score_test(ctx):
         
     embed = discord.Embed(title = "Yeet Score: {}".format(yeet_score), color = 0xd97355)
     embed.set_author(name = ctx.author, icon_url = ctx.author.avatar_url)
-    embed.add_field(name = "Yeetet Somone", value = str(has_yeet), inline = False)
-    embed.add_field(name = "Has been Yeetet", value = str(been_yeet), inline = False)
+    embed.add_field(name = "Times Yeetet Somone", value = str(has_yeet), inline = False)
+    embed.add_field(name = "Times Has been Yeetet", value = str(been_yeet), inline = False)
     # embed.set_footer(text = "Wow, a yeeter with the Rang of an {...}") # TODO add Rangs
     
-    await ctx.channel.send(embed=embed)
+    try:
+        await ctx.channel.send(embed=embed)
+    except e:
+        log("Could no send score of {}, because of {}".format(ctx.author, str(e)))
+
+    log("{} retrieved its Yeets Score".format(ctx.author))
+    
 
 # endregion
 
