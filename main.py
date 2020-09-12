@@ -6,8 +6,6 @@ from discord.voice_client import VoiceClient
 import random
 import time
 import json
-
-import json
 import os
 import sys
 import pathlib
