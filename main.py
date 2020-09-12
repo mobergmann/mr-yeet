@@ -15,7 +15,7 @@ import pathlib
 
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["test_token"]
+token = config["token"]
 
 #endregion
 
@@ -108,8 +108,13 @@ async def _yeet(ctx, should_kick):
                     return
                 break
 
+    if should_kick:
+        log("{} yeeted {}".format(ctx.author, user_to_yeet))
+    else:
+        log("{} yeetkicked {}".format(ctx.author, user_to_yeet))
+
     # inform, that bot has yeetet user x
-    await ctx.channel.send("Yeetet {}".format(ctx.author))
+    await ctx.channel.send("Yeeted {}".format(ctx.author))
     
     # disconnect bot from voice channnel
     await voice.disconnect()
@@ -122,8 +127,6 @@ bot = commands.Bot(command_prefix='/')
 
 @bot.command()
 async def yeet(ctx):
-    log("{} called yeet".format(ctx.author))
-
     if ctx.author.bot:
         return
 
@@ -131,8 +134,6 @@ async def yeet(ctx):
 
 @bot.command()
 async def yeetkick(ctx):
-    log("{} called yeetkick".format(ctx.author))
-
     if ctx.author.bot:
         return
 
