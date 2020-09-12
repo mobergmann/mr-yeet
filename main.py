@@ -114,7 +114,7 @@ async def _yeet(ctx, should_kick):
         log("{} yeetkicked {}".format(ctx.author, user_to_yeet))
 
     # inform, that bot has yeetet user x
-    await ctx.channel.send("Yeeted {}".format(ctx.author))
+    await ctx.channel.send("Yeeted {}".format(user_to_yeet))
     
     # disconnect bot from voice channnel
     await voice.disconnect()
