@@ -8,6 +8,9 @@ import time
 import json
 
 import json
+import os
+import sys
+import pathlib
 
 #region config and token
 
@@ -74,9 +77,11 @@ async def yeetkick(ctx):
 
     await _yeet(ctx, True)
 
-@bot.command()
-async def yeetrestart(ctx):
-    pass
+# @bot.command()
+# async def yeetrestart(ctx):
+#     path = str(pathlib.Path(__file__).parent.absolute())
+#     os.execv("python3", [path + os.path.sep + "main.py"])
+#     sys.exit(1)
 
 # endregion
 
