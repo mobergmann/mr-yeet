@@ -15,7 +15,7 @@ import pathlib
 
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["token"]
+token = config["test_token"]
 
 #endregion
 
@@ -121,7 +121,7 @@ async def _yeet(ctx, should_kick):
 bot = commands.Bot(command_prefix='/')
 
 @bot.command()
-async def yeet_test(ctx):
+async def yeet(ctx):
     log("{} called yeet".format(ctx.author))
 
     if ctx.author.bot:
@@ -130,7 +130,7 @@ async def yeet_test(ctx):
     await _yeet(ctx, False)
 
 @bot.command()
-async def yeetkick_test(ctx):
+async def yeetkick(ctx):
     log("{} called yeetkick".format(ctx.author))
 
     if ctx.author.bot:
@@ -140,4 +140,5 @@ async def yeetkick_test(ctx):
 
 # endregion
 
+log("Starting Mr Yeet")
 bot.run(token)
