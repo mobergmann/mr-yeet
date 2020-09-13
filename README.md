@@ -26,9 +26,11 @@ You can add the Bot by pressing [here](https://discord.com/oauth2/authorize?clie
 - attach files
 
 ## Usage
-- `/yeet` moves a random person into a channel called `YEET-LAUNCH` or if not exist into the guilds AFK channel.
-- `/yeetkick` disconnects a random person in your voice channel from the server
-- `/yeetscore` shows the yeet score of the caller
+- `/yeethelp`: Prints a help page (this page, in case you didn't notice).
+- `/yeet` Moves a random user into a channel called **YEET-LAUNCH** or if not exist into the guilds **AFK** channel.
+- `/yeetsoft`: Like `/yeet` but moves the user back into the origin channel after 2 seconds.
+- `/yeetkick`: Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.
+- `/yeetscore` Shows the yeet score of the caller.
 
 # Source Code
 ## config.json
