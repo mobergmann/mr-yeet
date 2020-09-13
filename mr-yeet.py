@@ -21,7 +21,7 @@ import sqlite3
 # Config
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["token"]
+token = config["test_token"]
 
 bot = commands.Bot(command_prefix="/")
 
@@ -130,7 +130,7 @@ def get_yeet_sound():
     # select an random yeet sound
     return "sounds" + os.path.sep + random.choice(yeet_sounds)
 
-async def _yeet(ctx, should_kick):
+async def _yeet(ctx, should_kick=False, move_back=False):
     #region Error Check
     yeet_voice = ctx.author.voice
 
@@ -175,8 +175,11 @@ async def _yeet(ctx, should_kick):
         return
     #endregion
 
+    # the origin channel in which mr yeet has been summond 
+    origin_channel = ctx.author.voice.channel
+
     # get users which can be yeetet
-    users_to_yeet = ctx.author.voice.channel.members
+    users_to_yeet = origin_channel.members
 
     # get user to yeet
     user_to_yeet = random.choice(users_to_yeet)
@@ -232,6 +235,11 @@ async def _yeet(ctx, should_kick):
         log("Could not save yeet of {} to database, bechause of: ".format(user_to_yeet.id) + str(e))
     #endregion
 
+    # soft yeet
+    if move_back:
+        time.sleep(2) # wait for the soft time to finish
+        await user_to_yeet.move_to(origin_channel) # move back to origin channel
+
     # disconnect bot from voice channnel
     await voice.disconnect()
 #endregion
@@ -259,14 +267,21 @@ async def yeet(ctx):
     if ctx.author.bot:
         return
 
-    await _yeet(ctx, False)
+    await _yeet(ctx)
 
 @bot.command()
 async def yeetkick(ctx):
     if ctx.author.bot:
         return
 
-    await _yeet(ctx, True)
+    await _yeet(ctx, should_kick=True)
+
+@bot.command()
+async def yeetsoft(ctx):
+    if ctx.author.bot:
+        return
+
+    await _yeet(ctx, move_back=True)
 
 @bot.command()
 async def yeetscore(ctx):
