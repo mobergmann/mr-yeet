@@ -21,7 +21,7 @@ import sqlite3
 # Config
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["test_token"]
+token = config["token"]
 
 bot = commands.Bot(command_prefix="/")
 
