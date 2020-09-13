@@ -13,7 +13,7 @@ The Bot needs to store some Data of the users to provide the `/yeetscore` functi
 
 # How-To
 ## Adding the Bot
-You can add the Bot by pressing (here)[https://discord.com/oauth2/authorize?client_id=753719268021108796&scope=bot&permissions=19975168].
+You can add the Bot by pressing [here](https://discord.com/oauth2/authorize?client_id=753719268021108796&scope=bot&permissions=19975168).
 
 ### The Bots needs at least the following permissions:
 - view channels
