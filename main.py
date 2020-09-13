@@ -18,7 +18,7 @@ import sqlite3
 
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["test_token"]
+token = config["token"]
 
 db_connection = None
 db_cursor = None
