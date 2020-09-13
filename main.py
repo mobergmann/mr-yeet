@@ -14,15 +14,19 @@ import pathlib
 import sqlite3
 #endregion
 
+
 #region globals (config, token and database)
 
+# Config
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["token"]
+token = config["test_token"]
 
+# Database
 db_connection = None
 db_cursor = None
 
+# Ranks
 yeet_ranks = [
     ("Unfortunatet Yeeter", 0),
     ("Yeet Beginner", 1),
@@ -40,7 +44,8 @@ yeet_ranks = [
 
 #endregion
 
-#region function
+
+#region functions
 
 #region Database
 def connect_db():
@@ -96,7 +101,7 @@ def db_inc_has_yeet(discord_user_id):
     db_connection.commit()
 #endregion
 
-
+#region yeet specifig
 def get_yeet_rank(yeet_score):
     # make secrets
     if 0 < yeet_score <= 0.01:
@@ -108,23 +113,18 @@ def get_yeet_rank(yeet_score):
     for i in range(len(yeet_ranks)-1):
         if yeet_ranks[i][1] <= yeet_score < yeet_ranks[i+1][1]:
             return yeet_ranks[i][0]
-    return yeet_ranks[len(yeet_ranks)-1][0]
+    return yeet_ranks[len(yeet_ranks)-1][0] # prevent an out of bounds
 
+def get_yeet_sound():
+    # get all files (yeet sounds) in the sounds folder
+    yeet_sounds = []
+    for (dirpath, dirnames, filenames) in os.walk("sounds/"):
+        yeet_sounds.extend(filenames)
+        break
 
+    # select an random yeet sound
+    return "sounds" + os.path.sep + random.choice(yeet_sounds)
 
-def log(message):
-    print("{}: {}".format(datetime.datetime.now(), message))
-    
-async def send_dm(user, message):
-    try:
-        dm_channel = user.dm_channel
-        if dm_channel == None:
-            dm_channel = await user.create_dm()
-        await dm_channel.send(message)
-    except e:
-        log("could not send dm to {}. See: {}".format(user, str(e)))
-        return False
-    
 async def _yeet(ctx, should_kick):
     #region Error Check
 
@@ -155,7 +155,7 @@ async def _yeet(ctx, should_kick):
     users_to_yeet = ctx.author.voice.channel.members
 
     # get user to yeet
-    user_to_yeet = users_to_yeet[random.randint(0,len(users_to_yeet)-1)]
+    user_to_yeet = random.choice(users_to_yeet)
 
     # get yeet channel from server
     # can either be a channel called YEET-LAUNCH, or if the channel doesn't exist a afk channel
@@ -168,6 +168,7 @@ async def _yeet(ctx, should_kick):
                 return
             except e:
                 log(str(e))
+                return
 
     # connect bot to voice
     voice = None
@@ -178,35 +179,38 @@ async def _yeet(ctx, should_kick):
         return
 
     # play yeet sound
-    player = voice.play(discord.FFmpegPCMAudio("YEET.mp3"))
-    time.sleep(1) # wait for the sound to be finished
+    player = voice.play(discord.FFmpegPCMAudio(get_yeet_sound()))
+    time.sleep(1) # wait for the sound to be finished playing
 
     # yeet user form voice channel
     for user in users_to_yeet:
         if user_to_yeet == user:
             if should_kick:
                 try:
-                    await user_to_yeet.move_to(None)
+                    await user_to_yeet.move_to(None) # disconnect from voice
                 except e:
                     log(str(e))
                     return
                 break
             else:
                 try:
-                    await user_to_yeet.move_to(yeet_channel)
+                    await user_to_yeet.move_to(yeet_channel) # move into yeet channel
                 except e:
                     log(str(e))
                     return
                 break
 
+    # log yeet action
     if should_kick:
         log("{} yeetkicked {}".format(ctx.author, user_to_yeet))
     else:
         log("{} yeeted {}".format(ctx.author, user_to_yeet))
 
-    # inform, that bot has yeetet user x
+    # inform, that bot has yeetet a user
     await ctx.channel.send("Yeeted {}".format(user_to_yeet))
     
+    #region add informatoin to database
+
     try:
         db_inc_has_yeet(ctx.author.id)
     except e:
@@ -217,13 +221,30 @@ async def _yeet(ctx, should_kick):
     except e:
         log("Could not save yeet of {} to database, bechause of: ".format(user_to_yeet.id) + str(e))
 
+    #endregion
+
     # disconnect bot from voice channnel
     await voice.disconnect()
+#endregion
+
+
+def log(message):
+    print("{}: {}".format(datetime.datetime.now(), message))
+    
+async def send_dm(user, message):
+    try:
+        dm_channel = user.dm_channel
+        if dm_channel == None:
+            dm_channel = await user.create_dm()
+        await dm_channel.send(message)
+    except e:
+        log("could not send dm to {}. See: {}".format(user, str(e)))
+        return False
 
 #endregion
 
-#region bot & command
 
+#region bot & command
 bot = commands.Bot(command_prefix="/")
 
 @bot.command()
@@ -277,21 +298,19 @@ async def yeetscore(ctx):
     embed.add_field(name = "Times Has been Yeetet", value = str(been_yeet), inline = False)
     embed.set_footer(text = "Your Yeet Rank is: \"{}\"".format(yeet_rank))
     
-    # semding the score and logging 
+    # semding the score and logging
     try:
         await ctx.channel.send(embed=embed)
     except e:
         log("Could no send score of {}, because of {}".format(ctx.author, str(e)))
 
     log("{} retrieved its Yeets Score".format(ctx.author))
-    
-
-# endregion
 
 @bot.event
 async def on_ready():
     log("Bot is running...")
     connect_db()
+# endregion
 
 log("Bot is starting...")
 bot.run(token)
