@@ -7,8 +7,9 @@ With `/yeetkick` a random user is disconnected from the server.
 
 With `/yeetscore` you receive your yeet score.
 
-## Warning
+## Disclaymer
 The Bot needs to store some Data of the users to provide the `/yeetscore` functionality. He stores the id of a discord user, who uses the bot, or has been yeetet by the bot, and he stores the times a user has been yeeted or yeeted someone.
+He also stores who and when a command has been used (logging) to make the process of an issue finding and fixing more easily.
 
 
 # How-To
