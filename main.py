@@ -127,7 +127,6 @@ def get_yeet_sound():
 
 async def _yeet(ctx, should_kick):
     #region Error Check
-
     yeet_voice = ctx.author.voice
 
     # if user is not in a voice channel, then inform the user
@@ -137,28 +136,22 @@ async def _yeet(ctx, should_kick):
         return
         
     yeet_voice_channel = yeet_voice.channel
-    
-    # if message guild is different from user voice channel inform the user
+
+    # if user is not connected to a voice channel    
     if yeet_voice_channel == None:
         log("{} is not connected to a voice channel".format(ctx.author))
         await send_dm(ctx.author, "Please only summmon me when you are connected to a chanel on a guild")
         return
 
+    # if message guild is different from user voice channel inform the user
     if ctx.guild != yeet_voice_channel.guild:
         log("{} used yeet on a guild to which he wasn't connected".format(ctx.author))
         await send_dm(ctx.author, "Please only summmon me on a guild, when you are also connected to a voicechanel on that guild.")
         return
 
-    #endregion
-
-    # get users which can be yeetet
-    users_to_yeet = ctx.author.voice.channel.members
-
-    # get user to yeet
-    user_to_yeet = random.choice(users_to_yeet)
 
     # get yeet channel from server
-    # can either be a channel called YEET-LAUNCH, or if the channel doesn't exist a afk channel
+    # can either be a channel called YEET-LAUNCH, or if the channel doesn't exist the afk channel
     yeet_channel = discord.utils.find(lambda x: x.name == "YEET-LAUNCH", ctx.guild.channels)
     if yeet_channel == None:
         yeet_channel = ctx.guild.afk_channel
@@ -169,6 +162,19 @@ async def _yeet(ctx, should_kick):
             except e:
                 log(str(e))
                 return
+
+    # if user already connected to yeet channel
+    if yeet_voice_channel == yeet_channel:
+        log("{} used yeet in the yeet channel".format(ctx.author))
+        await send_dm(ctx.author, "Please don't summmon me when you are alreay connected to the yeet_cannel.")
+        return
+    #endregion
+
+    # get users which can be yeetet
+    users_to_yeet = ctx.author.voice.channel.members
+
+    # get user to yeet
+    user_to_yeet = random.choice(users_to_yeet)
 
     # connect bot to voice
     voice = None
@@ -210,7 +216,6 @@ async def _yeet(ctx, should_kick):
     await ctx.channel.send("Yeeted {}".format(user_to_yeet))
     
     #region add informatoin to database
-
     try:
         db_inc_has_yeet(ctx.author.id)
     except e:
@@ -220,7 +225,6 @@ async def _yeet(ctx, should_kick):
         db_inc_been_yeet(user_to_yeet.id)
     except e:
         log("Could not save yeet of {} to database, bechause of: ".format(user_to_yeet.id) + str(e))
-
     #endregion
 
     # disconnect bot from voice channnel
@@ -240,7 +244,6 @@ async def send_dm(user, message):
     except e:
         log("could not send dm to {}. See: {}".format(user, str(e)))
         return False
-
 #endregion
 
 
