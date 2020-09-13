@@ -32,7 +32,7 @@ You can add the Bot by pressing [here](https://discord.com/oauth2/authorize?clie
 
 # Source Code
 ## config.json
-For the bot to function you need to create a file called `config.json`. Add a `token` attribute and a `command_prefix` attribute.
+For the bot to function you need to add values to the `config.json`. Add the token of your Bot to the `token` attribute and a prefix for the `command_prefix` attribute.
 
 For Example:
 ```json
