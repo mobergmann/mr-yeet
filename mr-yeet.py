@@ -30,17 +30,18 @@ db_cursor = None
 
 # Ranks
 yeet_ranks = [
-    ("Unfortunatet Yeeter", 0),
+    ("Unfortunate Yeeter", 0),
     ("Yeet Beginner", 1),
     ("Yeet Trainee", 3),
     ("Yeet Approved", 5),
     ("Yeet Adept", 7),
     ("Big Yeeter", 9),
-    ("Boss Yeeter", 10),
-    ("Grand Yeeter", 11),
-    ("Yeet King", 12),
-    ("Yeet Emperor", 13),
-    ("Grand Yeet Emperor", 14)
+    ("Yeet Schmied", 11)
+    ("Boss Yeeter", 13),
+    ("Grand Yeeter", 15),
+    ("Yeet King", 17),
+    ("Yeet Emperor", 19),
+    ("Grand Yeet Emperor", 21)
 ]
 
 
@@ -289,7 +290,7 @@ async def yeetscore(ctx):
     if been_yeet == 0:
         yeet_score = has_yeet
     else:
-        yeet_score = has_yeet / been_yeet
+        yeet_score = has_yeet / been_yeet + log(has_yeet)
 
 
     # get the yeet rank of the user
@@ -298,8 +299,8 @@ async def yeetscore(ctx):
     # creating the yeat_score embed
     embed = discord.Embed(title = "Yeet Score: {}".format(round(yeet_score, 2)), color = 0xd97355)
     embed.set_author(name = ctx.author, icon_url = ctx.author.avatar_url)
-    embed.add_field(name = "Times Yeetet Somone", value = str(has_yeet), inline = False)
-    embed.add_field(name = "Times Has been Yeetet", value = str(been_yeet), inline = False)
+    embed.add_field(name = "Times Yeetet", value = str(has_yeet), inline = False)
+    embed.add_field(name = "Times been Yeetet", value = str(been_yeet), inline = False)
     embed.set_footer(text = "Your Yeet Rank is: \"{}\"".format(yeet_rank))
 
     # semding the score and logging
