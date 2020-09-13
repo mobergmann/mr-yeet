@@ -20,7 +20,7 @@ import sqlite3
 # Config
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["test_token"]
+token = config["token"]
 
 bot = commands.Bot(command_prefix="/")
 
@@ -42,7 +42,7 @@ yeet_ranks = [
     ("Yeet Emperor", 13),
     ("Grand Yeet Emperor", 14)
 ]
-    
+
 
 #endregion
 
@@ -103,7 +103,7 @@ def db_inc_has_yeet(discord_user_id):
     db_connection.commit()
 #endregion
 
-#region yeet specifig
+#region yeet specific
 def get_yeet_rank(yeet_score):
     # make secrets
     if 0 < yeet_score <= 0.01:
@@ -136,10 +136,10 @@ async def _yeet(ctx, should_kick):
         log("{} is not connected to a voice channel".format(ctx.author))
         await send_dm(ctx.author, "Please only summmon me when you are connected to a chanel on a guild")
         return
-        
+
     yeet_voice_channel = yeet_voice.channel
 
-    # if user is not connected to a voice channel    
+    # if user is not connected to a voice channel
     if yeet_voice_channel == None:
         log("{} is not connected to a voice channel".format(ctx.author))
         await send_dm(ctx.author, "Please only summmon me when you are connected to a chanel on a guild")
@@ -181,7 +181,7 @@ async def _yeet(ctx, should_kick):
     # connect bot to voice
     voice = None
     try:
-        voice = await yeet_voice_channel.connect()                
+        voice = await yeet_voice_channel.connect()
     except e:
         log(str(e))
         return
@@ -216,7 +216,7 @@ async def _yeet(ctx, should_kick):
 
     # inform, that bot has yeetet a user
     await ctx.channel.send("Yeeted {}".format(user_to_yeet))
-    
+
     #region add informatoin to database
     try:
         db_inc_has_yeet(ctx.author.id)
@@ -236,7 +236,7 @@ async def _yeet(ctx, should_kick):
 
 def log(message):
     print("{}: {}".format(datetime.datetime.now(), message))
-    
+
 async def send_dm(user, message):
     try:
         dm_channel = user.dm_channel
@@ -283,14 +283,14 @@ async def yeetscore(ctx):
     # fill data into variables
     has_yeet = data[1]
     been_yeet = data[2]
-    
+
     # when been_yeet == 0, then yeet_score := has_yeet / 1
     # otherwise yeet_score := has_yeet / (been_yeet * 0.3)
     if been_yeet == 0:
         yeet_score = has_yeet
     else:
         yeet_score = has_yeet / been_yeet
-    
+
 
     # get the yeet rank of the user
     yeet_rank = get_yeet_rank(yeet_score=yeet_score)
@@ -301,7 +301,7 @@ async def yeetscore(ctx):
     embed.add_field(name = "Times Yeetet Somone", value = str(has_yeet), inline = False)
     embed.add_field(name = "Times Has been Yeetet", value = str(been_yeet), inline = False)
     embed.set_footer(text = "Your Yeet Rank is: \"{}\"".format(yeet_rank))
-    
+
     # semding the score and logging
     try:
         await ctx.channel.send(embed=embed)
