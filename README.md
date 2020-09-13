@@ -1,5 +1,8 @@
 # mr-yeet
-A Bot, which can be summoned with the command /yeet. When the Bot has been summoned, he moves a random user, which is on the same channel as the summoner, into a channel called "YEET-LAUNCH".  With /yeetkick a random user in the channel of the summoner is not been moved but been kicked.
+A Bot, which can be summoned with the command `/yeet`, or `/yeetkick`.
+When the Bot has been summoned, he moves a random user, which is on the same channel as the summoner, into a channel called "YEET-LAUNCH", or if not exist into the guilds AFK channel.
+With `/yeetkick` a random user is disconnected from the server.
+With `/yeetscore` you receive your yeet score.
 
 # Adding the Bot
 https://discord.com/oauth2/authorize?client_id=753719268021108796&scope=bot&permissions=16777216
