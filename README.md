@@ -1,11 +1,9 @@
 # mr-yeet
 A Bot, which can be summoned with the command `/yeet`, or `/yeetkick`.
 
-When the Bot has been summoned, he moves a random user, which is on the same channel as the summoner, into a channel called "YEET-LAUNCH", or if not exist into the guilds AFK channel.
+When the Bot has been summoned, he moves (or disconnects) a random user, which is on the same channel as the summoner, into a channel called "YEET-LAUNCH", or if not exist into the guilds AFK channel.
 
-With `/yeetkick` a random user is disconnected from the server.
-
-With `/yeetscore` you receive your yeet score.
+To get your personal Yeet Score you can use `/yeetscore`.
 
 ## Disclaymer
 The Bot needs to store some Data of the users to provide the `/yeetscore` functionality. He stores the id of a discord user, who uses the bot, or has been yeetet by the bot, and he stores the times a user has been yeeted or yeeted someone.
