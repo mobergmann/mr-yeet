@@ -18,15 +18,31 @@ import sqlite3
 
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["token"]
+token = config["test_token"]
 
 db_connection = None
 db_cursor = None
+
+yeet_ranks = [
+    ("Unfortunatet Yeeter", 0),
+    ("Yeet Beginner", 1),
+    ("Yeet Trainee", 3),
+    ("Yeet Approved", 5),
+    ("Yeet Adept", 7),
+    ("Big Yeeter", 9),
+    ("Boss Yeeter", 10),
+    ("Grand Yeeter", 11),
+    ("Yeet King", 12),
+    ("Yeet Emperor", 13),
+    ("Grand Yeet Emperor", 14)
+]
+    
 
 #endregion
 
 #region function
 
+#region Database
 def connect_db():
     global db_connection
     global db_cursor
@@ -78,6 +94,21 @@ def db_inc_has_yeet(discord_user_id):
 
     # Save (commit) the changes
     db_connection.commit()
+#endregion
+
+
+def get_yeet_rank(yeet_score):
+    # make secrets
+    if 0 < yeet_score <= 0.01:
+        return "Shitty Yeeter"
+    if yeet_score >= 35:
+        return "The Yeeter of all Yeeters"
+
+    # calculate the yeat rank of the user
+    for i in range(len(yeet_ranks)-1):
+        if yeet_ranks[i][1] <= yeet_score < yeet_ranks[i+1][1]:
+            return yeet_ranks[i][0]
+    return yeet_ranks[len(yeet_ranks)-1][0]
 
 
 
@@ -215,13 +246,12 @@ async def yeetscore(ctx):
     has_yeet = 0
     been_yeet = 0
 
-    # get data from database
+    # get data from database an handle errors or no database entry
     data = None
     try:
         data = db_get_data(ctx.author.id)
     except e:
         log("Could no retrive database information of {}, because of {}".format(ctx.author, str(e)))
-    
     if data == None:
         data = [ctx.author.id, 0, 0]
 
@@ -229,19 +259,25 @@ async def yeetscore(ctx):
     has_yeet = data[1]
     been_yeet = data[2]
     
-    # when been_yeet == 0, then yeet_score = has_yeet
-    # otherwise score is has_yeet / been_yeet
-    if data[2] == 0:
+    # when been_yeet == 0, then yeet_score := has_yeet / 1
+    # otherwise yeet_score := has_yeet / (been_yeet * 0.3)
+    if been_yeet == 0:
         yeet_score = has_yeet
     else:
-        yeet_score = data[1] / data[2]
-        
-    embed = discord.Embed(title = "Yeet Score: {}".format(yeet_score), color = 0xd97355)
+        yeet_score = has_yeet / been_yeet
+    
+
+    # get the yeet rank of the user
+    yeet_rank = get_yeet_rank(yeet_score=yeet_score)
+
+    # creating the yeat_score embed
+    embed = discord.Embed(title = "Yeet Score: {}".format(round(yeet_score, 2)), color = 0xd97355)
     embed.set_author(name = ctx.author, icon_url = ctx.author.avatar_url)
     embed.add_field(name = "Times Yeetet Somone", value = str(has_yeet), inline = False)
     embed.add_field(name = "Times Has been Yeetet", value = str(been_yeet), inline = False)
-    # embed.set_footer(text = "Wow, a yeeter with the Rang of an {...}") # TODO add Rangs
+    embed.set_footer(text = "Your Yeet Rank is: \"{}\"".format(yeet_rank))
     
+    # semding the score and logging 
     try:
         await ctx.channel.send(embed=embed)
     except e:
