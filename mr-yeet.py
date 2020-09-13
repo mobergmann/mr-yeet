@@ -38,11 +38,12 @@ yeet_ranks = [
     ("Yeet Adept", 7),
     ("Big Yeeter", 9),
     ("Yeet Schmied", 11),
-    ("Boss Yeeter", 13),
-    ("Grand Yeeter", 15),
-    ("Yeet King", 17),
+    ("Yeetlead", 13),
+    ("Boss Yeeter", 15),
+    ("Grand Yeeter", 17),
+    ("Yeet King", 18),
     ("Yeet Emperor", 19),
-    ("Grand Yeet Emperor", 21)
+    ("Grand Yeet Emperor", 20)
 ]
 
 
