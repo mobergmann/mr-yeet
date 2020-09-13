@@ -238,7 +238,10 @@ async def _yeet(ctx, should_kick=False, move_back=False):
     # soft yeet
     if move_back:
         time.sleep(2) # wait for the soft time to finish
-        await user_to_yeet.move_to(origin_channel) # move back to origin channel
+        try:
+            await user_to_yeet.move_to(origin_channel) # move back to origin channel
+        except expression as identifier:
+            log("Could not move {} back to origin, because of: {}".format(user_to_yeet, str(e)))
 
     # disconnect bot from voice channnel
     await voice.disconnect()
@@ -292,7 +295,13 @@ async def yeethelp(ctx):
     embed.add_field(name="/yeetkick", value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.", inline=False)
     embed.add_field(name="/yeetscore", value="Shows the yeet score of the caller.", inline=False)
     embed.set_footer(text="Good luck yeeting!")
-    await ctx.channel.send(embed=embed)
+
+    log("{} called yeethelp")
+    
+    try:
+        await ctx.channel.send(embed=embed)
+    except:
+        log("yeethelp couldn't be send, because of: {}".format(str(e)))
 
 @bot.command()
 async def yeetscore(ctx):
