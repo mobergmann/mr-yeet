@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Bot
 from discord.voice_client import VoiceClient
+import math
 import random
 import time
 import json
@@ -290,7 +291,7 @@ async def yeetscore(ctx):
     if been_yeet == 0:
         yeet_score = has_yeet
     else:
-        yeet_score = has_yeet / been_yeet + log(has_yeet)
+        yeet_score = (has_yeet / been_yeet) + (has_yeet / 50)
 
 
     # get the yeet rank of the user
