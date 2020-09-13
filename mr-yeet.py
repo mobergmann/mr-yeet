@@ -22,6 +22,8 @@ config_file = open("config.json", "r").read()
 config = json.loads(config_file)
 token = config["test_token"]
 
+bot = commands.Bot(command_prefix="/")
+
 # Database
 db_connection = None
 db_cursor = None
@@ -248,7 +250,6 @@ async def send_dm(user, message):
 
 
 #region bot & command
-bot = commands.Bot(command_prefix="/")
 
 @bot.command()
 async def yeet(ctx):
