@@ -1,19 +1,43 @@
 # mr-yeet
-A Bot, which can be summoned with the command /yeet. When the Bot has been summoned, he moves a random user, which is on the same channel as the summoner, into a channel called "YEET-LAUNCH".  With /yeetkick a random user in the channel of the summoner is not been moved but been kicked.
+A Bot, which can be summoned with the command `/yeet`, or `/yeetkick`.
 
-# Adding the Bot
-https://discord.com/oauth2/authorize?client_id=753719268021108796&scope=bot&permissions=16777216
+When the Bot has been summoned, he moves a random user, which is on the same channel as the summoner, into a channel called "YEET-LAUNCH", or if not exist into the guilds AFK channel.
 
-# Using the Bot
-`/yeet` yeets a random person in a channel challed `YEET-LAUNCH`
-`/yeetkick` yeets a random person from the server
+With `/yeetkick` a random user is disconnected from the server.
 
-# config.json
-Create a file called `config.json` and a token attribute and a `command_prefix` attribute.
+With `/yeetscore` you receive your yeet score.
+
+## Warning
+The Bot needs to store some Data of the users to provide the `/yeetscore` functionality. He stores the id of a discord user, who uses the bot, or has been yeetet by the bot, and he stores the times a user has been yeeted or yeeted someone.
+
+
+# How-To
+## Adding the Bot
+You can add the Bot by pressing [here](https://discord.com/oauth2/authorize?client_id=753719268021108796&scope=bot&permissions=19975168).
+
+### The Bots needs at least the following permissions:
+- view channels
+- connect
+- move members
+- speak
+
+- read messages
+- send messages
+- embed links
+- attach files
+
+## Usage
+- `/yeet` moves a random person into a channel called `YEET-LAUNCH` or if not exist into the guilds AFK channel.
+- `/yeetkick` disconnects a random person in your voice channel from the server
+- `/yeetscore` shows the yeet score of the caller
+
+# Source Code
+## config.json
+For the bot to function you need to create a file called `config.json`. Add a `token` attribute and a `command_prefix` attribute.
 
 For Example:
 ```json
 {
-    "token": "123abc...",
+    "token": "your token here",
     "command_prefix": "/"
 }```
