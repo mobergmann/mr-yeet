@@ -32,6 +32,13 @@ You can add the Bot by pressing [here](https://discord.com/oauth2/authorize?clie
 - `/yeetkick`: Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.
 - `/yeetscore` Shows the yeet score of the caller.
 
+## Yeet Score FAQ
+- How is the yeet score calculated?
+  - (*times you yeetet anyone* / *times you have been yeetet*) + (*times you yeetet anyone* / 50)
+- Is there a difference between the commands in yeet score gain?
+  - No! Every command increases your yeet score according to the function.
+
+
 # Source Code
 ## config.json
 For the bot to function you need to add values to the `config.json`. Add the token of your Bot to the `token` attribute and a prefix for the `command_prefix` attribute.
