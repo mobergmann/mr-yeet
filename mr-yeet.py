@@ -21,7 +21,7 @@ import sqlite3
 # Config
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["token"]
+token = config["test_token"]
 
 bot = commands.Bot(command_prefix="/")
 
@@ -164,7 +164,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
             try:
                 await ctx.channel.send("I cannot use my yeet powers, because I need a channel with the name YEET-LAUNCH, or a AFK channel. Please create one.")
                 return
-            except e:
+            except Exception as e:
                 log(str(e))
                 return
 
@@ -188,7 +188,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
     voice = None
     try:
         voice = await yeet_voice_channel.connect()
-    except e:
+    except Exception as e:
         log(str(e))
         return
 
@@ -202,17 +202,25 @@ async def _yeet(ctx, should_kick=False, move_back=False):
             if should_kick:
                 try:
                     await user_to_yeet.move_to(None) # disconnect from voice
-                except e:
+                except Exception as e:
                     log(str(e))
                     return
                 break
             else:
                 try:
                     await user_to_yeet.move_to(yeet_channel) # move into yeet channel
-                except e:
+                except Exception as e:
                     log(str(e))
                     return
                 break
+
+    # disconnect bot from voice channnel (so early, to prevent errors)
+    try:
+        await voice.disconnect()
+    except:
+        log("Fatal Error could not disconnect from voice channel")
+        return
+
 
     # log yeet action
     if should_kick:
@@ -223,18 +231,15 @@ async def _yeet(ctx, should_kick=False, move_back=False):
     # inform, that bot has yeetet a user
     await ctx.channel.send("Yeeted {}".format(user_to_yeet))
 
-    # disconnect bot from voice channnel
-    await voice.disconnect()
-
     #region add informatoin to database
     try:
         db_inc_has_yeet(ctx.author.id)
-    except e:
+    except Exception as e:
         log("Could not save yeet of {} to database, bechause of: ".format(ctx.author.id) + str(e))
 
     try:
         db_inc_been_yeet(user_to_yeet.id)
-    except e:
+    except Exception as e:
         log("Could not save yeet of {} to database, bechause of: ".format(user_to_yeet.id) + str(e))
     #endregion
 
@@ -243,7 +248,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
         time.sleep(2) # wait for the soft time to finish
         try:
             await user_to_yeet.move_to(origin_channel) # move back to origin channel
-        except expression as identifier:
+        except Exception as e:
             log("Could not move {} back to origin, because of: {}".format(user_to_yeet, str(e)))
 #endregion
 
@@ -257,13 +262,30 @@ async def send_dm(user, message):
         if dm_channel == None:
             dm_channel = await user.create_dm()
         await dm_channel.send(message)
-    except e:
+    except Exception as e:
         log("could not send dm to {}. See: {}".format(user, str(e)))
         return False
 #endregion
 
 
 #region bot & command
+
+@bot.command()
+async def yeethelp(ctx):
+    embed=discord.Embed(title="Yeet Manual", url="https://github.com/mobergmann/mr-yeet#usage", description="This is a manual to improve your yeet skills.", color=0xff65c4)
+    embed.add_field(name="/yeethelp", value="Prints a help page (in case you didn't notice, this page).", inline=False)
+    embed.add_field(name="/yeet", value="Moves a random user into a channel called **YEET-LAUNCH** or if not exist into the guilds **AFK** channel.", inline=False)
+    embed.add_field(name="/yeetsoft", value=" Like `/yeet` but moves the user back into the origin channel after 2 seconds.", inline=False)
+    embed.add_field(name="/yeetkick", value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.", inline=False)
+    embed.add_field(name="/yeetscore", value="Shows the yeet score of the caller.", inline=False)
+    embed.set_footer(text="Good luck yeeting!")
+
+    log("{} called yeethelp")
+    
+    try:
+        await ctx.channel.send(embed=embed)
+    except:
+        log("yeethelp couldn't be send, because of: {}".format(str(e)))
 
 @bot.command()
 async def yeet(ctx):
@@ -287,23 +309,6 @@ async def yeetsoft(ctx):
     await _yeet(ctx, move_back=True)
 
 @bot.command()
-async def yeethelp(ctx):
-    embed=discord.Embed(title="Yeet Manual", url="https://github.com/mobergmann/mr-yeet#usage", description="This is a manual to improve your yeet skills.", color=0xff65c4)
-    embed.add_field(name="/yeethelp", value="Prints a help page (in case you didn't notice, this page).", inline=False)
-    embed.add_field(name="/yeet", value="Moves a random user into a channel called **YEET-LAUNCH** or if not exist into the guilds **AFK** channel.", inline=False)
-    embed.add_field(name="/yeetsoft", value=" Like `/yeet` but moves the user back into the origin channel after 2 seconds.", inline=False)
-    embed.add_field(name="/yeetkick", value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.", inline=False)
-    embed.add_field(name="/yeetscore", value="Shows the yeet score of the caller.", inline=False)
-    embed.set_footer(text="Good luck yeeting!")
-
-    log("{} called yeethelp")
-    
-    try:
-        await ctx.channel.send(embed=embed)
-    except:
-        log("yeethelp couldn't be send, because of: {}".format(str(e)))
-
-@bot.command()
 async def yeetscore(ctx):
     yeet_score = 0
     has_yeet = 0
@@ -313,7 +318,7 @@ async def yeetscore(ctx):
     data = None
     try:
         data = db_get_data(ctx.author.id)
-    except e:
+    except Exception as e:
         log("Could no retrive database information of {}, because of {}".format(ctx.author, str(e)))
     if data == None:
         data = [ctx.author.id, 0, 0]
@@ -343,7 +348,7 @@ async def yeetscore(ctx):
     # semding the score and logging
     try:
         await ctx.channel.send(embed=embed)
-    except e:
+    except Exception as e:
         log("Could no send score of {}, because of {}".format(ctx.author, str(e)))
 
     log("{} retrieved its Yeets Score".format(ctx.author))
