@@ -223,6 +223,9 @@ async def _yeet(ctx, should_kick=False, move_back=False):
     # inform, that bot has yeetet a user
     await ctx.channel.send("Yeeted {}".format(user_to_yeet))
 
+    # disconnect bot from voice channnel
+    await voice.disconnect()
+
     #region add informatoin to database
     try:
         db_inc_has_yeet(ctx.author.id)
@@ -242,9 +245,6 @@ async def _yeet(ctx, should_kick=False, move_back=False):
             await user_to_yeet.move_to(origin_channel) # move back to origin channel
         except expression as identifier:
             log("Could not move {} back to origin, because of: {}".format(user_to_yeet, str(e)))
-
-    # disconnect bot from voice channnel
-    await voice.disconnect()
 #endregion
 
 
