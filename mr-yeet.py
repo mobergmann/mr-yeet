@@ -129,7 +129,8 @@ def db_shield_activated(user: DB_User):
 
 #endregion
 
-#region yeet specific
+#region yeet
+
 def get_yeet_rank(yeet_score):
     # make secrets
     if 0 < yeet_score <= 0.01:
@@ -202,7 +203,16 @@ async def _yeet(ctx, should_kick=False, move_back=False):
     origin_channel = ctx.author.voice.channel
 
     # get users which can be yeetet
-    users_to_yeet = origin_channel.members
+    users_to_yeet = get_yeet_user(ctx, origin_channel.members)
+
+    if users_to_yeet == None:
+        try:
+            await ctx.channel.send("Here is no yeetable user.")
+            return
+        except Exception as e:
+            log(str(e))
+            return
+        return
 
     # get user to yeet
     user_to_yeet = random.choice(users_to_yeet)
@@ -275,6 +285,29 @@ async def _yeet(ctx, should_kick=False, move_back=False):
             log("Could not move {} back to origin, because of: {}".format(user_to_yeet, str(e)))
 #endregion
 
+def get_yeet_user(ctx, users):
+    ret_users = []
+    for i_user in users:
+        user = db_get(i_user.id)
+
+        if user == None: # user not in db
+            ret_users.append(i_user)
+            continue
+        elif user.yeet_shield_last_activated == None: # no shield
+            ret_users.append(i_user)
+            continue
+
+        shield_activation_date = datetime.strptime(user.yeet_shield_last_activated)
+        expiration_date = datetime.strptime(user[4]) + datetime.timedelta(days=1)
+        if datetime.datetime.now() > expiration_date: # shield expired
+            ret_users.append(i_user)
+            continue
+        
+    if len(ret_users) == 0:
+        return None
+    else:
+        return ret_users
+        
 
 def log(message):
     print("{}: {}".format(datetime.datetime.now(), message))
@@ -340,7 +373,7 @@ async def yeetscore(ctx):
     # get data from database an handle errors or no database entry
     data = None
     try:
-        data = db_get_data(ctx.author.id)
+        data = db_get(ctx.author.id)
     except Exception as e:
         log("Could no retrive database information of {}, because of {}".format(ctx.author, str(e)))
     if data == None:
@@ -375,6 +408,15 @@ async def yeetscore(ctx):
         log("Could no send score of {}, because of {}".format(ctx.author, str(e)))
 
     log("{} retrieved its Yeets Score".format(ctx.author))
+
+@bot.command()
+async def yeetshield(ctx):
+    pass
+
+    # get yeet score
+    # subtract 0.5 yeet points
+    # if erg is smaller than 0, than print error and undo
+    # 
 
 @bot.event
 async def on_ready():
