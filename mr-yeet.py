@@ -131,6 +131,29 @@ def db_shield_activated(user: DB_User):
 
 #region yeet
 
+def get_yeet_user(ctx, users):
+    ret_users = []
+    for i_user in users:
+        user = db_get(i_user.id)
+
+        if user == None: # user not in db
+            ret_users.append(i_user)
+            continue
+        elif user.yeet_shield_last_activated == None: # no shield
+            ret_users.append(i_user)
+            continue
+
+        shield_activation_date = datetime.strptime(user.yeet_shield_last_activated)
+        expiration_date = datetime.strptime(user[4]) + datetime.timedelta(days=1)
+        if datetime.datetime.now() > expiration_date: # shield expired
+            ret_users.append(i_user)
+            continue
+        
+    if len(ret_users) == 0:
+        return None
+    else:
+        return ret_users
+
 def get_yeet_rank(yeet_score):
     # make secrets
     if 0 < yeet_score <= 0.01:
@@ -283,31 +306,9 @@ async def _yeet(ctx, should_kick=False, move_back=False):
             await user_to_yeet.move_to(origin_channel) # move back to origin channel
         except Exception as e:
             log("Could not move {} back to origin, because of: {}".format(user_to_yeet, str(e)))
+
 #endregion
 
-def get_yeet_user(ctx, users):
-    ret_users = []
-    for i_user in users:
-        user = db_get(i_user.id)
-
-        if user == None: # user not in db
-            ret_users.append(i_user)
-            continue
-        elif user.yeet_shield_last_activated == None: # no shield
-            ret_users.append(i_user)
-            continue
-
-        shield_activation_date = datetime.strptime(user.yeet_shield_last_activated)
-        expiration_date = datetime.strptime(user[4]) + datetime.timedelta(days=1)
-        if datetime.datetime.now() > expiration_date: # shield expired
-            ret_users.append(i_user)
-            continue
-        
-    if len(ret_users) == 0:
-        return None
-    else:
-        return ret_users
-        
 
 def log(message):
     print("{}: {}".format(datetime.datetime.now(), message))
