@@ -1,4 +1,5 @@
 #region import
+
 import asyncio
 import datetime
 import discord
@@ -13,15 +14,29 @@ import os
 import sys
 import pathlib
 import sqlite3
+
 #endregion
 
+class DB_User:
+    dc_id = None
+    has_yeet = None
+    been_yeet = None
+    yeet_coins = None
+    yeet_shield_last_activated = None
+    
+    def __init__(self, dc_id, has_yeet, been_yeet, yeet_coins, yeet_shield_last_activated):
+        self.dc_id = dc_id
+        self.has_yeet = has_yeet
+        self.been_yeet = been_yeet
+        self.yeet_coins = yeet_coins
+        self.yeet_shield_last_activated = yeet_shield_last_activated
 
 #region globals (config, token and database)
 
 # Config
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
-token = config["token"]
+token = config["test_token"]
 
 bot = commands.Bot(command_prefix="/")
 
@@ -46,14 +61,15 @@ yeet_ranks = [
     ("Grand Yeet Emperor", 20)
 ]
 
-
 #endregion
 
 
 #region functions
 
 #region Database
+
 def connect_db():
+    """connect to the given database"""
     global db_connection
     global db_cursor
 
@@ -63,47 +79,54 @@ def connect_db():
 
     # Create table if not existant
     db_cursor.execute("""CREATE TABLE IF NOT EXISTS "yeet" (
-        "discord_user_id" INTEGER NOT NULL PRIMARY KEY UNIQUE,
-        "has_yeet" INTEGER NOT NULL,
-        "been_yeet" INTEGER NOT NULL);""")
+        "discord_user_id"	INTEGER NOT NULL UNIQUE,
+        "has_yeet"	INTEGER NOT NULL,
+        "been_yeet"	INTEGER NOT NULL,
+        "yeet_coins"	INTEGER NOT NULL DEFAULT 0,
+        "yeet_shield_last_activated"	TEXT,
+        PRIMARY KEY("discord_user_id")
+    );""")
 
-def db_get_data(discord_user_id):
-    db_cursor.execute("SELECT * FROM yeet WHERE discord_user_id = {}".format(str(discord_user_id)))
-    return db_cursor.fetchone()
+def db_get(dc_id: int):
+    """returns the column of the user with the given user id"""
 
-def db_inc_been_yeet(discord_user_id):
+    db_cursor.execute("SELECT * FROM yeet WHERE discord_user_id = ?", (str(dc_id)))
+    column = db_cursor.fetchone()
+
+    if column == None:
+        return None
+    else:
+        return DB_User(dc_id=column[0], has_yeet=column[1], been_yeet=column[2], yeet_coins=column[3], yeet_shield_last_activated=column[4])
+
+def db_update(user: DB_User):
     global db_connection
     global db_cursor
 
-    db_cursor.execute("SELECT been_yeet FROM yeet WHERE discord_user_id = {}".format(str(discord_user_id)))
-    column = db_cursor.fetchone()
-
-    # Insert a row of data
-    if column == None:
-        db_cursor.execute("INSERT INTO yeet VALUES(?, 0, ?)", (str(discord_user_id), str(1)))
+    user = db_get(dc_id=user.dc_id)
+    if user == None:
+        db_cursor.execute(
+            "INSERT INTO yeet VALUES(?, ?, ?, ?, ?)", 
+            (str(user.dc_id), str(user.has_yeet), str(user.been_yeet), str(user.yeet_coins), str(user.yeet_shield_last_activated)))
     else:
-        tmp = column[0] + 1
-        db_cursor.execute("UPDATE yeet SET been_yeet = ? WHERE discord_user_id = ?", (str(tmp), str(discord_user_id)))
+        db_cursor.execute(
+            "UPDATE yeet SET has_yeet = ?, been_yeet = ?, yeet_coins = ?, yeet_shield_last_activated = ? WHERE discord_user_id = ?", 
+            (str(user.has_yeet), str(user.been_yeet), str(user.yeet_coins), str(user.yeet_shield_last_activated), str(user.dc_id)))
 
     # Save (commit) the changes
     db_connection.commit()
 
-def db_inc_has_yeet(discord_user_id):
-    global db_connection
-    global db_cursor
 
-    db_cursor.execute("SELECT has_yeet FROM yeet WHERE discord_user_id = {}".format(str(discord_user_id)))
-    column = db_cursor.fetchone()
+def db_shield_expired(user: DB_User):
+    # shield disabled => deactivate shield
+    user.yeet_shield_last_activated = None
+    db_update(user=user)
 
-    # Insert a row of data
-    if column == None:
-        db_cursor.execute("INSERT INTO yeet VALUES(?, ?, 0)", (str(discord_user_id), str(1)))
-    else:
-        tmp = column[0] + 1
-        db_cursor.execute("UPDATE yeet SET has_yeet = ? WHERE discord_user_id = ?", (str(tmp), str(discord_user_id)))
+def db_shield_activated(user: DB_User):
+    activation_time = datetime.datetime.now()
+    user.yeet_shield_last_activated = activation_time
 
-    # Save (commit) the changes
-    db_connection.commit()
+    db_update(user=user)
+
 #endregion
 
 #region yeet specific
