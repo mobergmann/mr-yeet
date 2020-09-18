@@ -18,22 +18,31 @@ import sqlite3
 #endregion
 
 class DB_User:
-    dc_id = None
+    id = None
     has_yeet = None
     been_yeet = None
     yeet_coins = None
     yeet_shield_last_activated = None
     
-    def __init__(self, dc_id, has_yeet, been_yeet, yeet_coins, yeet_shield_last_activated):
-        self.dc_id = dc_id
+    is_default_user = True # if the user object is not present in the database
+    
+    def __init__(self, id, has_yeet, been_yeet, yeet_coins, yeet_shield_last_activated, is_default_user=False):
+        self.id = id
         self.has_yeet = has_yeet
         self.been_yeet = been_yeet
         self.yeet_coins = yeet_coins
-        self.yeet_shield_last_activated = yeet_shield_last_activated
+        self.yeet_shield_last_activated = None if yeet_shield_last_activated == None or yeet_shield_last_activated == 'None' else datetime.datetime.strptime(yeet_shield_last_activated, "%Y-%m-%d %H:%M:%S.%f")
+        self.is_default_user = is_default_user
+    
+    @staticmethod
+    def default_user(id:int):
+        return DB_User(id=id, has_yeet=0, been_yeet=0, yeet_coins=0, yeet_shield_last_activated=None, is_default_user=True)
 
 #region globals (config, token and database)
 
 # Config
+SOFT_TIME = 2
+
 config_file = open("config.json", "r").read()
 config = json.loads(config_file)
 token = config["test_token"]
@@ -87,58 +96,61 @@ def connect_db():
         PRIMARY KEY("discord_user_id")
     );""")
 
-def db_get(dc_id: int) -> DB_User:
+def db_get(id:int) -> DB_User:
     """returns the column of the user with the given user id"""
 
-    db_cursor.execute("SELECT * FROM yeet WHERE discord_user_id = ?", (str(dc_id)))
+    db_cursor.execute("SELECT * FROM yeet WHERE discord_user_id = {}".format(str(id)))
     column = db_cursor.fetchone()
 
     if column == None:
-        return None
+        return DB_User.default_user(id)
     else:
-        return DB_User(dc_id=column[0], has_yeet=column[1], been_yeet=column[2], yeet_coins=column[3], yeet_shield_last_activated=column[4])
+        return DB_User(id=column[0], has_yeet=column[1], been_yeet=column[2], yeet_coins=column[3], yeet_shield_last_activated = column[4])
 
-def db_update(user: DB_User):
+# TODO better solution for update or isert logic
+def db_update(user:DB_User):
     """updates a database column with the given id. if the column doesn't exist, then it creates a new column"""
-    # TODO when calling update is get and if else necessary
-
     global db_connection
     global db_cursor
 
-    user = db_get(dc_id=user.dc_id)
-    if user == None:
+    if user.is_default_user:
         db_cursor.execute(
-            "INSERT INTO yeet VALUES(?, ?, ?, ?, ?)", 
-            (str(user.dc_id), str(user.has_yeet), str(user.been_yeet), str(user.yeet_coins), str(user.yeet_shield_last_activated)))
+            "INSERT INTO yeet VALUES(?, ?, ?, ?, ?)",
+            (str(user.id), str(user.has_yeet), str(user.been_yeet), str(user.yeet_coins), str(user.yeet_shield_last_activated)))
     else:
         db_cursor.execute(
             "UPDATE yeet SET has_yeet = ?, been_yeet = ?, yeet_coins = ?, yeet_shield_last_activated = ? WHERE discord_user_id = ?", 
-            (str(user.has_yeet), str(user.been_yeet), str(user.yeet_coins), str(user.yeet_shield_last_activated), str(user.dc_id)))
+            (str(user.has_yeet), str(user.been_yeet), str(user.yeet_coins), str(user.yeet_shield_last_activated), str(user.id)))
 
     # Save (commit) the changes
     db_connection.commit()
-
-
-def db_shield_expired(user: DB_User):
-    """set the shield attribute to null"""
-    # shield disabled => deactivate shield
-    user.yeet_shield_last_activated = None
-    db_update(user=user)
-
-def db_shield_activated(user: DB_User):
-    """sets the shield attribute to active and adds the current time as the shield activation date"""
-    activation_time = datetime.datetime.now()
-    user.yeet_shield_last_activated = activation_time
-
-    db_update(user=user)
 
 #endregion
 
 #region yeet
 
-def is_yeet_shield_active(user:DB_User):
-    expiration_date = datetime.strptime(user.yeet_shield_last_activated) + datetime.timedelta(days=1)
-    return not datetime.datetime.now() > expiration_date # is shield is not expired
+# TODO return the remaining time
+def yeet_shield_remaining_time(user:DB_User):
+    """returns the remaining time the yeet shield is active"""
+    
+    if user.yeet_shield_last_activated == None:
+        return "0"
+    else:
+        expiration_date = user.yeet_shield_last_activated + datetime.timedelta(days=1)
+
+        if str(expiration_date) < str(datetime.datetime.now()):
+            return "0"
+        else:
+            time_delta = expiration_date - datetime.datetime.now()
+
+            s = time_delta.seconds
+            hours = s // 3600
+            s = s - (hours * 3600)
+            minutes = s // 60
+            seconds = s - (minutes * 60)
+            time_string = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+
+            return time_string
 
 def get_yeet_user(users:list):
     """returns a list od users which doesn't have yeet shield activated"""
@@ -146,7 +158,7 @@ def get_yeet_user(users:list):
     for i_user in users:
         user = db_get(i_user.id)
 
-        if user == None: # user not in db
+        if user.is_default_user: # user not in db
             ret_users.append(i_user)
             continue
         elif user.yeet_shield_last_activated == None: # no shield
@@ -154,7 +166,7 @@ def get_yeet_user(users:list):
             continue
 
         expiration_date = datetime.strptime(user.yeet_shield_last_activated) + datetime.timedelta(days=1)
-        if datetime.datetime.now() > expiration_date: # shield expired
+        if yeet_shield_remaining_time(user=user): # shield expired
             ret_users.append(i_user)
             continue
         
@@ -183,26 +195,25 @@ async def _yeet(ctx, should_kick:bool=False, move_back:bool=False):
     #region Error Check
 
     # get user from database
-    yeet_caller = db_get(dc_id=ctx.author.id)
-    if yeet_caller == None: # user not found in Database, assign default attributes
-        yeet_caller = DB_User(dc_id=ctx.author.id, has_yeet=0, been_yeet=0, yeet_coins=0, yeet_shield_last_activated=None)
+    db_yeeter = db_get(id=ctx.author.id)
+    if db_yeeter.is_default_user: # user not found in Database, assign default attributes
+        db_yeeter = DB_User.default_user()
 
-    # if yeet_caller has shield is activated then cancel yeet
-    if is_yeet_shield_active(yeet_caller):
-        send_dm(ctx.author, "it is not possible to Yeet with Yeet Shield.")
+    # if yeet_caller has shield activated cancel yeet
+    if yeet_shield_remaining_time(db_yeeter) > 0:
+        send_dm(ctx.author, "You can't yeet when you are protected by the power of the magic (and expensive) yeet shield.")
 
 
     # if user is not connected to a voice channel
     if ctx.author.voice == None or ctx.author.voice.channel == None:
-        await send_dm(ctx.author, "Please only summmon me when you are connected to a chanel on a guild")
+        await send_dm(ctx.author, "Please only summmon me when you are connected to a channel on a guild.")
         return
 
     yeet_voice = ctx.author.voice
     yeet_voice_channel = yeet_voice.channel # the origin channel in which mr yeet has been summond
-    yeet_guild = ctx.guild
-
+    
     # if message guild is different from user voice channel inform the user
-    if yeet_guild != yeet_voice_channel.guild:
+    if ctx.guild != yeet_voice_channel.guild:
         await send_dm(ctx.author, "Please only summmon me on a guild, to which you are connected.")
         return
 
@@ -212,13 +223,8 @@ async def _yeet(ctx, should_kick:bool=False, move_back:bool=False):
     if yeet_channel == None:
         yeet_channel = ctx.guild.afk_channel
         if yeet_channel == None:
-            try:
-                await ctx.channel.send("I cannot use my yeet powers, because I need a channel with the name YEET-LAUNCH, or an AFK channel. Please create one of these.")
-                return
-            except Exception as e:
-                log(str(e))
-                return
-
+            await ctx.channel.send("I cannot use my yeet powers, because I need a channel with the name YEET-LAUNCH, or an AFK channel. Please create one of these.")
+            
     # if user already connected to yeet channel
     if yeet_voice_channel == yeet_channel:
         await send_dm(ctx.author, "Please don't summmon me when you are alreay connected to the yeet_cannel.")
@@ -230,12 +236,7 @@ async def _yeet(ctx, should_kick:bool=False, move_back:bool=False):
     users_to_yeet = get_yeet_user(yeet_voice_channel.members)
 
     if users_to_yeet == None or len(users_to_yeet) == 0:
-        try:
-            await send_dm(ctx.author, "You are not connceted to a cannel with a youser which can be yeetet")
-            return
-        except Exception as e:
-            log(str(e))
-            return
+        await send_dm(ctx.author, "You are not connceted to a cannel with a user which can be yeetet.")
         return
 
     # get user to yeet
@@ -250,63 +251,39 @@ async def _yeet(ctx, should_kick:bool=False, move_back:bool=False):
         return
 
     # play yeet sound
-    player = voice.play(discord.FFmpegPCMAudio("sounds"+os.path.sep+"yeet.mp3"))
+    try:
+        player = voice.play(discord.FFmpegPCMAudio("sounds"+os.path.sep+"yeet.mp3"))
+    except Exception as e:
+        log(str(e))
+        return
     time.sleep(1) # wait for the sound to be finished playing
 
     # yeet user form voice channel
-    for user in users_to_yeet:
-        if user_to_yeet == user:
-            if should_kick:
-                try:
-                    await user_to_yeet.move_to(None) # disconnect from voice
-                except Exception as e:
-                    log(str(e))
-                    return
-                break
-            else:
-                try:
-                    await user_to_yeet.move_to(yeet_channel) # move into yeet channel
-                except Exception as e:
-                    log(str(e))
-                    return
-                break
-
-    # disconnect bot from voice channnel (so early, to prevent errors)
-    try:
-        await voice.disconnect()
-    except:
-        log("Fatal Error could not disconnect from voice channel")
-        return
-
-
-    # log yeet action
-    if should_kick:
-        log("{} yeetkicked {}".format(ctx.author, user_to_yeet))
-    else:
-        log("{} yeeted {}".format(ctx.author, user_to_yeet))
+    await user_to_yeet.move_to(None if should_kick else yeet_channel) # yeetick or yeet
+    
+    # disconnect bot from voice channnel
+    await voice.disconnect()
 
     # inform, that bot has yeetet a user
     await ctx.channel.send("Yeeted {}".format(user_to_yeet))
 
     #region add informatoin to database
-    try:
-        db_inc_has_yeet(ctx.author.id)
-    except Exception as e:
-        log("Could not save yeet of {} to database, bechause of: ".format(ctx.author.id) + str(e))
 
-    try:
-        db_inc_been_yeet(user_to_yeet.id)
-    except Exception as e:
-        log("Could not save yeet of {} to database, bechause of: ".format(user_to_yeet.id) + str(e))
+    db_yeeter.has_yeet+=1
+    # add yeet coin
+    db_yeeter.yeet_coins += 0.04 # per yeet add 0.04 yeet coins (after 25 yeets you have 1 yeet coin)
+    db_update(db_yeeter) # save changes
+
+    user_to_yeet_data = db_get(user_to_yeet.id)
+    user_to_yeet_data.been_yeet+=1
+    db_update(user_to_yeet_data)
+
     #endregion
 
     # soft yeet
     if move_back:
-        time.sleep(2) # wait for the soft time to finish
-        try:
-            await user_to_yeet.move_to(origin_channel) # move back to origin channel
-        except Exception as e:
-            log("Could not move {} back to origin, because of: {}".format(user_to_yeet, str(e)))
+        time.sleep(SOFT_TIME) # wait for the soft time to finish
+        await user_to_yeet.move_to(yeet_voice_channel) # move back to origin channel
 
 #endregion
 
@@ -330,20 +307,39 @@ async def send_dm(user, message):
 
 @bot.command()
 async def yeethelp(ctx):
-    embed=discord.Embed(title="Yeet Manual", url="https://github.com/mobergmann/mr-yeet#usage", description="This is a manual to improve your yeet skills.", color=0xff65c4)
-    embed.add_field(name="/yeethelp", value="Prints a help page (in case you didn't notice, this page).", inline=False)
-    embed.add_field(name="/yeet", value="Moves a random user into a channel called **YEET-LAUNCH** or if not exist into the guilds **AFK** channel.", inline=False)
-    embed.add_field(name="/yeetsoft", value=" Like `/yeet` but moves the user back into the origin channel after 2 seconds.", inline=False)
-    embed.add_field(name="/yeetkick", value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.", inline=False)
-    embed.add_field(name="/yeetscore", value="Shows the yeet score of the caller.", inline=False)
-    embed.set_footer(text="Good luck yeeting!")
-
-    log("{} called yeethelp")
+    embed=discord.Embed(
+        title="Yeet Manual",
+        url="https://github.com/mobergmann/mr-yeet#usage",
+        description="This is a manual to improve your yeet skills.",
+        color=0xff65c4)
+    embed.add_field(
+        name="/yeethelp",
+        value="If you need help type `/yeethelp`! Prints a help page (in case you didn't notice, this page).",
+        inline=False)
+    embed.add_field(
+        name="/yeet",
+        value="Moves a random user into a channel called **YEET-LAUNCH** or if not exist into the guilds **AFK** channel.",
+        inline=False)
+    embed.add_field(
+        name="/yeetsoft",
+        value=" Like `/yeet` but moves the user back into the origin channel after 2 seconds.",
+        inline=False)
+    embed.add_field(
+        name="/yeetkick",
+        value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.",
+        inline=False)
+    embed.add_field(
+        name="/yeetshield",
+        value="Activates a Yeet Shield. When a Yeet Shield is activated, you cannot be yeetet anymore.",
+        inline=False)
+    embed.add_field(
+        name="/yeetaccount",
+        value="Shows the yeet stats of the player. Yeet Score, Yeet Coins and Yeet Shield.",
+        inline=False)
+    embed.set_footer(
+        text="Good luck yeeting!")
     
-    try:
-        await ctx.channel.send(embed=embed)
-    except:
-        log("yeethelp couldn't be send, because of: {}".format(str(e)))
+    await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def yeet(ctx):
@@ -367,53 +363,91 @@ async def yeetsoft(ctx):
     await _yeet(ctx, move_back=True)
 
 @bot.command()
-async def yeetscore(ctx):
-    yeet_score = 0
-    has_yeet = 0
-    been_yeet = 0
-
+async def yeetaccount(ctx):
     # get data from database an handle errors or no database entry
-    data = None
-    try:
-        data = db_get(ctx.author.id)
-    except Exception as e:
-        log("Could no retrive database information of {}, because of {}".format(ctx.author, str(e)))
-    if data == None:
-        data = [ctx.author.id, 0, 0]
-
-    # fill data into variables
-    has_yeet = data[1]
-    been_yeet = data[2]
+    user = db_get(ctx.author.id)
 
     # when been_yeet == 0, then yeet_score := has_yeet / 1
-    # otherwise yeet_score := has_yeet / (been_yeet * 0.3)
-    if been_yeet == 0:
-        yeet_score = has_yeet
+    # otherwise yeet_score := has_yeet / (been_yeet / 35)
+    if user.been_yeet == 0:
+        yeet_score = user.has_yeet
     else:
-        yeet_score = (has_yeet / been_yeet) + (has_yeet / 50)
-
+        yeet_score = (user.has_yeet / user.been_yeet) + (user.has_yeet / 35)
 
     # get the yeet rank of the user
     yeet_rank = get_yeet_rank(yeet_score=yeet_score)
 
     # creating the yeat_score embed
-    embed = discord.Embed(title = "Yeet Score: {}".format(round(yeet_score, 2)), color = 0xd97355)
-    embed.set_author(name = ctx.author, icon_url = ctx.author.avatar_url)
-    embed.add_field(name = "Times Yeetet", value = str(has_yeet), inline = False)
-    embed.add_field(name = "Times been Yeetet", value = str(been_yeet), inline = False)
-    embed.set_footer(text = "Your Yeet Rank is: \"{}\"".format(yeet_rank))
+    embed = discord.Embed(
+        title = "Yeet Account",
+        url = "https://github.com/mobergmann/mr-yeet",
+        description="Your personal Yeet passport. All the yeet you need!",
+        color = 0xd97355)
+    embed.set_author(
+        name = ctx.author.name,
+        icon_url = ctx.author.avatar_url)
 
+    embed.add_field(
+        name = "‎",
+        value = str("**__Yeet Stats__**"),
+        inline = False)
+
+    embed.add_field(
+        name = "Yeet Score",
+        value = str(round(yeet_score, 2)),
+        inline = True)
+    embed.add_field(
+        name = "Yeet Rank",
+        value = yeet_rank,
+        inline = True)
+    embed.add_field(
+        name = "‎",
+        value = "‎",
+        inline = True)
+        
+    embed.add_field(
+        name = "Times Yeetet",
+        value = str(user.has_yeet),
+        inline = True)
+    embed.add_field(
+        name = "Times been Yeetet",
+        value = str(user.been_yeet),
+        inline = True)
+    embed.add_field(
+        name = "‎",
+        value = "‎",
+        inline = True)
+
+    embed.add_field(
+        name = "‎",
+        value = "**__Yeet Wallet__**",
+        inline = False)
+
+    embed.add_field(
+        name = "Yeet Coins",
+        value = str(round(user.yeet_coins, 2)),
+        inline = False)
+
+    yeet_shield_time = yeet_shield_remaining_time(user=user)
+    
+    embed.add_field(
+        name = "Yeet Shield",
+        value = "inactive" if yeet_shield_time == "0" else "active",
+        inline = True)
+    embed.add_field(
+        name = "Remaining",
+        value =  "0" if yeet_shield_time == "0" else yeet_shield_time,
+        inline = True)
+    
+    
     # semding the score and logging
-    try:
-        await ctx.channel.send(embed=embed)
-    except Exception as e:
-        log("Could no send score of {}, because of {}".format(ctx.author, str(e)))
-
-    log("{} retrieved its Yeets Score".format(ctx.author))
+    await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def yeetshield(ctx):
-    pass
+    db_user = db_get(ctx.author.id)
+    db_user.yeet_shield_last_activated = str(datetime.datetime.now())
+    db_update(db_user)
 
     # get yeet score
     # subtract 0.5 yeet points
