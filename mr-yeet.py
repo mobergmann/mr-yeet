@@ -136,7 +136,11 @@ def db_shield_activated(user: DB_User):
 
 #region yeet
 
-def get_yeet_user(ctx, users):
+def is_yeet_shield_active(user:DB_User):
+    expiration_date = datetime.strptime(user.yeet_shield_last_activated) + datetime.timedelta(days=1)
+    return not datetime.datetime.now() > expiration_date # is shield is not expired
+
+def get_yeet_user(users:list):
     """returns a list od users which doesn't have yeet shield activated"""
     ret_users = []
     for i_user in users:
@@ -149,8 +153,7 @@ def get_yeet_user(ctx, users):
             ret_users.append(i_user)
             continue
 
-        shield_activation_date = datetime.strptime(user.yeet_shield_last_activated)
-        expiration_date = datetime.strptime(user[4]) + datetime.timedelta(days=1)
+        expiration_date = datetime.strptime(user.yeet_shield_last_activated) + datetime.timedelta(days=1)
         if datetime.datetime.now() > expiration_date: # shield expired
             ret_users.append(i_user)
             continue
@@ -160,7 +163,7 @@ def get_yeet_user(ctx, users):
     else:
         return ret_users
 
-def get_yeet_rank(yeet_score):
+def get_yeet_rank(yeet_score:int):
     """returns the yeet score spesific yeet rank"""
     # make secrets
     if 0 < yeet_score <= 0.01:
@@ -174,40 +177,34 @@ def get_yeet_rank(yeet_score):
             return yeet_ranks[i][0]
     return yeet_ranks[len(yeet_ranks)-1][0] # prevent an out of bounds
 
-async def _yeet(ctx, should_kick=False, move_back=False):
+
+async def _yeet(ctx, should_kick:bool=False, move_back:bool=False):
     """the main yeet logic"""
     #region Error Check
 
-    # TODO check if user has yeet shield activated
     # get user from database
     yeet_caller = db_get(dc_id=ctx.author.id)
     if yeet_caller == None: # user not found in Database, assign default attributes
         yeet_caller = DB_User(dc_id=ctx.author.id, has_yeet=0, been_yeet=0, yeet_coins=0, yeet_shield_last_activated=None)
 
+    # if yeet_caller has shield is activated then cancel yeet
+    if is_yeet_shield_active(yeet_caller):
+        send_dm(ctx.author, "it is not possible to Yeet with Yeet Shield.")
 
-
-    yeet_voice = ctx.author.voice
-
-    # if user is not in a voice channel, then inform the user
-    if yeet_voice == None:
-        log("{} is not connected to a voice channel".format(ctx.author))
-        await send_dm(ctx.author, "Please only summmon me when you are connected to a chanel on a guild")
-        return
-
-    yeet_voice_channel = yeet_voice.channel
 
     # if user is not connected to a voice channel
-    if yeet_voice_channel == None:
-        log("{} is not connected to a voice channel".format(ctx.author))
+    if ctx.author.voice == None or ctx.author.voice.channel == None:
         await send_dm(ctx.author, "Please only summmon me when you are connected to a chanel on a guild")
         return
 
-    # if message guild is different from user voice channel inform the user
-    if ctx.guild != yeet_voice_channel.guild:
-        log("{} used yeet on a guild to which he wasn't connected".format(ctx.author))
-        await send_dm(ctx.author, "Please only summmon me on a guild, when you are also connected to a voicechanel on that guild.")
-        return
+    yeet_voice = ctx.author.voice
+    yeet_voice_channel = yeet_voice.channel # the origin channel in which mr yeet has been summond
+    yeet_guild = ctx.guild
 
+    # if message guild is different from user voice channel inform the user
+    if yeet_guild != yeet_voice_channel.guild:
+        await send_dm(ctx.author, "Please only summmon me on a guild, to which you are connected.")
+        return
 
     # get yeet channel from server
     # can either be a channel called YEET-LAUNCH, or if the channel doesn't exist the afk channel
@@ -216,7 +213,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
         yeet_channel = ctx.guild.afk_channel
         if yeet_channel == None:
             try:
-                await ctx.channel.send("I cannot use my yeet powers, because I need a channel with the name YEET-LAUNCH, or a AFK channel. Please create one.")
+                await ctx.channel.send("I cannot use my yeet powers, because I need a channel with the name YEET-LAUNCH, or an AFK channel. Please create one of these.")
                 return
             except Exception as e:
                 log(str(e))
@@ -224,20 +221,17 @@ async def _yeet(ctx, should_kick=False, move_back=False):
 
     # if user already connected to yeet channel
     if yeet_voice_channel == yeet_channel:
-        log("{} used yeet in the yeet channel".format(ctx.author))
         await send_dm(ctx.author, "Please don't summmon me when you are alreay connected to the yeet_cannel.")
         return
+    
     #endregion
 
-    # the origin channel in which mr yeet has been summond 
-    origin_channel = ctx.author.voice.channel
-
     # get users which can be yeetet
-    users_to_yeet = get_yeet_user(ctx, origin_channel.members)
+    users_to_yeet = get_yeet_user(yeet_voice_channel.members)
 
-    if users_to_yeet == None:
+    if users_to_yeet == None or len(users_to_yeet) == 0:
         try:
-            await ctx.channel.send("Here is no yeetable user.")
+            await send_dm(ctx.author, "You are not connceted to a cannel with a youser which can be yeetet")
             return
         except Exception as e:
             log(str(e))
@@ -256,7 +250,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
         return
 
     # play yeet sound
-    player = voice.play(discord.FFmpegPCMAudio("sounds{}yeet.mp3".format(os.path.sep)))
+    player = voice.play(discord.FFmpegPCMAudio("sounds"+os.path.sep+"yeet.mp3"))
     time.sleep(1) # wait for the sound to be finished playing
 
     # yeet user form voice channel
