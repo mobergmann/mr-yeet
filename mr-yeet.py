@@ -64,7 +64,7 @@ yeet_ranks = [
 #endregion
 
 
-#region functions
+#region Functions
 
 #region Database
 
@@ -87,7 +87,7 @@ def connect_db():
         PRIMARY KEY("discord_user_id")
     );""")
 
-def db_get(dc_id: int):
+def db_get(dc_id: int) -> DB_User:
     """returns the column of the user with the given user id"""
 
     db_cursor.execute("SELECT * FROM yeet WHERE discord_user_id = ?", (str(dc_id)))
@@ -99,6 +99,9 @@ def db_get(dc_id: int):
         return DB_User(dc_id=column[0], has_yeet=column[1], been_yeet=column[2], yeet_coins=column[3], yeet_shield_last_activated=column[4])
 
 def db_update(user: DB_User):
+    """updates a database column with the given id. if the column doesn't exist, then it creates a new column"""
+    # TODO when calling update is get and if else necessary
+
     global db_connection
     global db_cursor
 
@@ -117,11 +120,13 @@ def db_update(user: DB_User):
 
 
 def db_shield_expired(user: DB_User):
+    """set the shield attribute to null"""
     # shield disabled => deactivate shield
     user.yeet_shield_last_activated = None
     db_update(user=user)
 
 def db_shield_activated(user: DB_User):
+    """sets the shield attribute to active and adds the current time as the shield activation date"""
     activation_time = datetime.datetime.now()
     user.yeet_shield_last_activated = activation_time
 
@@ -132,6 +137,7 @@ def db_shield_activated(user: DB_User):
 #region yeet
 
 def get_yeet_user(ctx, users):
+    """returns a list od users which doesn't have yeet shield activated"""
     ret_users = []
     for i_user in users:
         user = db_get(i_user.id)
@@ -155,6 +161,7 @@ def get_yeet_user(ctx, users):
         return ret_users
 
 def get_yeet_rank(yeet_score):
+    """returns the yeet score spesific yeet rank"""
     # make secrets
     if 0 < yeet_score <= 0.01:
         return "Shitty Yeeter"
@@ -167,18 +174,18 @@ def get_yeet_rank(yeet_score):
             return yeet_ranks[i][0]
     return yeet_ranks[len(yeet_ranks)-1][0] # prevent an out of bounds
 
-def get_yeet_sound():
-    # get all files (yeet sounds) in the sounds folder
-    yeet_sounds = []
-    for (dirpath, dirnames, filenames) in os.walk("sounds/"):
-        yeet_sounds.extend(filenames)
-        break
-
-    # select an random yeet sound
-    return "sounds" + os.path.sep + random.choice(yeet_sounds)
-
 async def _yeet(ctx, should_kick=False, move_back=False):
+    """the main yeet logic"""
     #region Error Check
+
+    # TODO check if user has yeet shield activated
+    # get user from database
+    yeet_caller = db_get(dc_id=ctx.author.id)
+    if yeet_caller == None: # user not found in Database, assign default attributes
+        yeet_caller = DB_User(dc_id=ctx.author.id, has_yeet=0, been_yeet=0, yeet_coins=0, yeet_shield_last_activated=None)
+
+
+
     yeet_voice = ctx.author.voice
 
     # if user is not in a voice channel, then inform the user
@@ -249,7 +256,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
         return
 
     # play yeet sound
-    player = voice.play(discord.FFmpegPCMAudio(get_yeet_sound()))
+    player = voice.play(discord.FFmpegPCMAudio("sounds{}yeet.mp3".format(os.path.sep)))
     time.sleep(1) # wait for the sound to be finished playing
 
     # yeet user form voice channel
