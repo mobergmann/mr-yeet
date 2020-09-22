@@ -224,7 +224,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
 
     # log yeet action
     if should_kick:
-        log("{} yeetkicked {}".format(ctx.author, user_to_yeet))
+        log("{} yeetdisconnected {}".format(ctx.author, user_to_yeet))
     else:
         log("{} yeeted {}".format(ctx.author, user_to_yeet))
 
@@ -276,7 +276,7 @@ async def yeethelp(ctx):
     embed.add_field(name="/yeethelp", value="Prints a help page (in case you didn't notice, this page).", inline=False)
     embed.add_field(name="/yeet", value="Moves a random user into a channel called **YEET-LAUNCH** or if not exist into the guilds **AFK** channel.", inline=False)
     embed.add_field(name="/yeetsoft", value=" Like `/yeet` but moves the user back into the origin channel after 2 seconds.", inline=False)
-    embed.add_field(name="/yeetkick", value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.", inline=False)
+    embed.add_field(name="/yeetdisconnect", value=" Like `/yeet` but doesn't move the user into the yeet channel, instead disconnects the user from the server.", inline=False)
     embed.add_field(name="/yeetscore", value="Shows the yeet score of the caller.", inline=False)
     embed.set_footer(text="Good luck yeeting!")
 
@@ -295,7 +295,7 @@ async def yeet(ctx):
     await _yeet(ctx)
 
 @bot.command()
-async def yeetkick(ctx):
+async def yeetdisconnect(ctx):
     if ctx.author.bot:
         return
 
