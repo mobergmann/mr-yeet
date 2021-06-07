@@ -1,4 +1,3 @@
-#region import
 import asyncio
 import datetime
 import discord
@@ -13,7 +12,6 @@ import os
 import sys
 import pathlib
 import sqlite3
-#endregion
 
 
 #region globals (config, token and database)
@@ -53,6 +51,8 @@ yeet_ranks = [
 #region functions
 
 #region Database
+
+
 def connect_db():
     global db_connection
     global db_cursor
@@ -67,9 +67,11 @@ def connect_db():
         "has_yeet" INTEGER NOT NULL,
         "been_yeet" INTEGER NOT NULL);""")
 
+    
 def db_get_data(discord_user_id):
     db_cursor.execute("SELECT * FROM yeet WHERE discord_user_id = {}".format(str(discord_user_id)))
     return db_cursor.fetchone()
+
 
 def db_inc_been_yeet(discord_user_id):
     global db_connection
@@ -88,6 +90,7 @@ def db_inc_been_yeet(discord_user_id):
     # Save (commit) the changes
     db_connection.commit()
 
+    
 def db_inc_has_yeet(discord_user_id):
     global db_connection
     global db_cursor
@@ -104,9 +107,12 @@ def db_inc_has_yeet(discord_user_id):
 
     # Save (commit) the changes
     db_connection.commit()
+    
 #endregion
 
 #region yeet specific
+
+
 def get_yeet_rank(yeet_score):
     # make secrets
     if 0 < yeet_score <= 0.01:
@@ -120,6 +126,7 @@ def get_yeet_rank(yeet_score):
             return yeet_ranks[i][0]
     return yeet_ranks[len(yeet_ranks)-1][0] # prevent an out of bounds
 
+
 def get_yeet_sound():
     # get all files (yeet sounds) in the sounds folder
     yeet_sounds = []
@@ -129,6 +136,7 @@ def get_yeet_sound():
 
     # select an random yeet sound
     return "sounds" + os.path.sep + random.choice(yeet_sounds)
+
 
 async def _yeet(ctx, should_kick=False, move_back=False):
     #region Error Check
@@ -256,6 +264,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
 def log(message):
     print("{}: {}".format(datetime.datetime.now(), message))
 
+    
 async def send_dm(user, message):
     try:
         dm_channel = user.dm_channel
@@ -265,10 +274,12 @@ async def send_dm(user, message):
     except Exception as e:
         log("could not send dm to {}. See: {}".format(user, str(e)))
         return False
+    
 #endregion
 
 
 #region bot & command
+
 
 @bot.command()
 async def yeethelp(ctx):
@@ -287,6 +298,7 @@ async def yeethelp(ctx):
     except:
         log("yeethelp couldn't be send, because of: {}".format(str(e)))
 
+        
 @bot.command()
 async def yeet(ctx):
     if ctx.author.bot:
@@ -294,6 +306,7 @@ async def yeet(ctx):
 
     await _yeet(ctx)
 
+    
 @bot.command()
 async def yeetkick(ctx):
     if ctx.author.bot:
@@ -301,6 +314,7 @@ async def yeetkick(ctx):
 
     await _yeet(ctx, should_kick=True)
 
+    
 @bot.command()
 async def yeetsoft(ctx):
     if ctx.author.bot:
@@ -308,6 +322,7 @@ async def yeetsoft(ctx):
 
     await _yeet(ctx, move_back=True)
 
+    
 @bot.command()
 async def yeetscore(ctx):
     yeet_score = 0
@@ -353,11 +368,18 @@ async def yeetscore(ctx):
 
     log("{} retrieved its Yeets Score".format(ctx.author))
 
+    
 @bot.event
 async def on_ready():
     log("Bot is running...")
     connect_db()
-# endregion
-
-log("Bot is starting...")
-bot.run(token)
+# endregion    
+    
+    
+def main():
+    log("Bot is starting...")
+    bot.run(token)
+    
+   
+if __name__ == "__main__":
+    main()
