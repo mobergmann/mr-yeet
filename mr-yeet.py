@@ -1,16 +1,9 @@
-import asyncio
 import datetime
 import discord
 from discord.ext import commands
-from discord.ext.commands import Bot
-from discord.voice_client import VoiceClient
-import math
 import random
 import time
 import json
-import os
-import sys
-import pathlib
 import sqlite3
 
 
@@ -127,17 +120,6 @@ def get_yeet_rank(yeet_score):
     return yeet_ranks[len(yeet_ranks)-1][0] # prevent an out of bounds
 
 
-def get_yeet_sound():
-    # get all files (yeet sounds) in the sounds folder
-    yeet_sounds = []
-    for (dirpath, dirnames, filenames) in os.walk("sounds/"):
-        yeet_sounds.extend(filenames)
-        break
-
-    # select an random yeet sound
-    return "sounds" + os.path.sep + random.choice(yeet_sounds)
-
-
 async def _yeet(ctx, should_kick=False, move_back=False):
     #region Error Check
     yeet_voice = ctx.author.voice
@@ -201,7 +183,7 @@ async def _yeet(ctx, should_kick=False, move_back=False):
         return
 
     # play yeet sound
-    player = voice.play(discord.FFmpegPCMAudio(get_yeet_sound()))
+    player = voice.play(discord.FFmpegPCMAudio("sounds/yeet.mp3"))
     time.sleep(1) # wait for the sound to be finished playing
 
     # yeet user form voice channel
