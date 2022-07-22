@@ -1,0 +1,6 @@
+[submodule "dependencies/DPP"]
+	path = dependencies/DPP
+	url = https://github.com/brainboxdotcc/DPP.git
+[submodule "dependencies/SQLiteCpp"]
+	path = dependencies/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git
