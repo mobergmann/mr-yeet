@@ -1,4 +1,4 @@
-#include "Database.h"
+#include "../include/Database.h"
 
 SQLite::Database Database::database = SQLite::Database("database.sqlite3", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 

@@ -1,9 +1,9 @@
 #include <iostream>
 #include <random>
-#include <dpp/dpp.h>
+#include "dpp/dpp.h"
 
-#include "User.h"
-#include "Database.h"
+#include "../include/User.h"
+#include "../include/Database.h"
 
 
 std::random_device device;

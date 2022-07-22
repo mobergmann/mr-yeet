@@ -7,9 +7,9 @@ add_subdirectory(dependencies/DPP)
 add_subdirectory(dependencies/SQLiteCpp)
 
 add_executable(${PROJECT_NAME}
-        User.h
-        Database.cpp Database.h
-        main.cpp
+        include/User.h
+        src/Database.cpp include/Database.h
+        src/main.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}
