@@ -150,6 +150,22 @@ void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
                 return;
             }
 
+#pragma region play sound file
+                if (!guild->connect_member_voice(author.user_id))
+                {
+                    event.reply("An error occurred connecting to your voice channel. Please contact the maintainer.");
+                    return;
+                }
+
+                dpp::voiceconn* v = event.from->get_voice(guild->id);
+                if (v && v->voiceclient && v->voiceclient->is_ready())
+                {
+                    v->voiceclient->send_audio_raw((uint16_t*)robot, robot_size);
+                    // todo disconnect
+                    event.from->disconnect_voice(guild->id);
+                }
+#pragma endregion
+
             // send yeet message and special message when author yeeted itself
             if (author.user_id == random_yeet_user.id)
             {
@@ -257,6 +273,24 @@ void immunity(const dpp::slashcommand_t &event)
 
 int main()
 {
+#pragma region load yeet sound
+    // according to: https://dpp.dev/soundboard.html
+    std::ifstream input("../resources/yeet-sound.wav", std::ios::in|std::ios::binary|std::ios::ate);
+    if (input.is_open())
+    {
+        robot_size = input.tellg();
+        robot = new uint8_t[robot_size];
+        input.seekg(0, std::ios::beg);
+        input.read((char*)robot, robot_size);
+        input.close();
+    }
+    else
+    {
+        std::cerr << "Could not open yeet soundfile." << std::endl;
+        return EXIT_FAILURE;
+    }
+#pragma endregion
+
     dpp::cluster bot("MTAwMDA0MDUxMjM4NTk3ODM5OQ.G0tNrg.F4IVqGj6kbsKOufLjt99jCP9zxN2w0ikAphH5k");
 
     bot.on_log(dpp::utility::cout_logger());
