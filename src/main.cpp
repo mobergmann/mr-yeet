@@ -138,7 +138,7 @@ void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
     else
     {
         cluster.guild_member_move(afk_channel, guild->id, random_yeet_user.id,
-            [&cluster, &event, &author, &random_yeet_user, &origin_channel, &guild](auto callback)
+            [&cluster, event, author, random_yeet_user, origin_channel, guild](auto callback)
         {
             // catch callback errors
             if (callback.is_error())
@@ -146,7 +146,7 @@ void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
                 event.reply("An error occurred. Please contact the maintainer.");
                 return;
             }
-std::cout << "checked error" << std::endl;
+
             // send yeet message and special message when author yeeted itself
             if (author.user_id == random_yeet_user.id)
             {
@@ -156,10 +156,10 @@ std::cout << "checked error" << std::endl;
             {
                 event.reply(author.get_mention() + std::string(" yeeted ") + random_yeet_user.get_mention());
             }
-std::cout << "replied" << std::endl;
+
             // wait the afk time penalty
             std::this_thread::sleep_for(std::chrono::seconds(yeet_waiting_time));
-std::cout << "slept" << std::endl;
+
             // todo
             //  // dont need to move, when user has already moved
             //  if () {}
