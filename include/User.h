@@ -1,7 +1,8 @@
 #ifndef USER_H
 #define USER_H
 
-#include "dpp/dpp.h"
+#include <cmath>
+#include <dpp/dpp.h>
 
 
 struct User
@@ -11,12 +12,12 @@ struct User
     unsigned long has_yeeted;
     bool immunity;
 
-    unsigned long score() const
+    double score() const
     {
         if (has_yeeted == 0) {
             return 0;
         }
-        return been_yeeted / has_yeeted;
+        return (double)been_yeeted / (double)has_yeeted;
     }
 };
 

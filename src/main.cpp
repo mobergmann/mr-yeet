@@ -1,50 +1,92 @@
 #include <iostream>
+#include <iomanip>
 #include <random>
-#include "dpp/dpp.h"
+#include <chrono>
+#include <thread>
+#include <cmath>
+
+#include <dpp/dpp.h>
 
 #include "../include/User.h"
 #include "../include/Database.h"
 
 
+/// The time interval in seconds, how long the user should remain in the afk channel
+const int yeet_waiting_time = 2;
+
+/// Global random device, used for generating unique random numbers
 std::random_device device;
+/// Global random number generator, used for generating unique random numbers
 std::mt19937 random_number_generator(device());
 
-void yeet(const dpp::slashcommand_t &event)
+
+void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
 {
     Database db;
 
     auto author = event.command.member;
+    User db_author{};
+    try
+    {
+        db_author = db.get_user(author.user_id);
+    }
+    catch (std::exception &e)
+    {
+        event.reply("Error communicating with the database. Please contact the maintainer.");
+        return;
+    }
+
+    // check if author has immunity activated and skip if so
+    if (db_author.immunity)
+    {
+        event.reply("You have **immunity enabled** and therefore cannot yeet. **Disable** immunity first.");
+        return;
+    }
 
     // try to retrieve guild from cache
     auto guild = dpp::find_guild(event.command.guild_id);
     if (not guild)
     {
-        event.reply("Could not find the requested guild.");
+        event.reply("Could not find this guild...");
         return;
     }
 
     // get voice channel where the user is also connected to
     std::vector<dpp::user> users;
+    dpp::snowflake origin_channel;
     // filter only the members, connected to our channel
     {
-        auto _users = guild->voice_members;
+        auto unfiltered_users = guild->voice_members;
 
         // search current channel
-        dpp::snowflake channel_id;
-        for (const auto &user: _users)
+        for (const auto &user: unfiltered_users)
         {
             if (user.second.user_id == author.user_id)
             {
-                channel_id = user.second.channel_id;
+                origin_channel = user.second.channel_id;
                 break;
             }
         }
 
         // filter only the users connected to the current channel
-        for (const auto &user: _users)
+        for (const auto &user: unfiltered_users)
         {
-            if (user.second.channel_id == channel_id)
+            if (user.second.channel_id == origin_channel)
             {
+                try
+                {
+                    // don't add user, which are immune to yeet
+                    if (db.get_user(user.second.user_id).immunity)
+                    {
+                        continue;
+                    }
+                }
+                catch (std::exception &e)
+                {
+                    event.reply("Error communicating with the database. Please contact the maintainer.");
+                    return;
+                }
+
                 auto _user = dpp::find_user(user.second.user_id);
                 // skip users which cannot be retrieved, so we can dereference
                 if (not _user)
@@ -57,57 +99,114 @@ void yeet(const dpp::slashcommand_t &event)
         }
     }
 
-    if (users.size() <= 1)
-    {
-        event.reply("You need friends to summon me, go find some!");
-        return;
-    }
+    // todo disable after debugging
+//    if (users.size() <= 1)
+//    {
+//        event.reply("You have to be at **least two people** in a voice channel, which have **immunity turned off**.");
+//        return;
+//    }
 
     // get a random user from users, which should be yeeted
     std::uniform_int_distribution<std::mt19937::result_type> distribution(0, users.size());
     auto random_yeet_user = users[distribution(random_number_generator)];
 
     // increase yeet scores
-    db.increase_been_yeeted(random_yeet_user.id);
-    db.increase_has_yeeted(author.user_id);
+    try
+    {
+        db.increase_been_yeeted(random_yeet_user.id);
+        db.increase_has_yeeted(author.user_id);
+    }
+    catch (std::exception &e)
+    {
+        event.reply("Error communicating with the database. Please contact the maintainer.");
+        return;
+    }
 
     // move user into akf
-    auto afk_channel = dpp::find_channel(guild->afk_channel_id);
-    if (afk_channel)
+    auto afk_channel = guild->afk_channel_id;
+    // no need to move user back, so don't bother
+    if (not afk_channel)
     {
-        // todo
-        // random_yeet_user.move_voice(afk_channel);
+        cluster.guild_member_move(afk_channel, guild->id, random_yeet_user.id, [&event](auto callback){
+            if (callback.is_error())
+            {
+                event.reply("An error occurred. Please contact the maintainer.");
+                return;
+            }
+        });
     }
     else
     {
-        // todo
-        // random_yeet_user.disconnect();
-    }
+        cluster.guild_member_move(afk_channel, guild->id, random_yeet_user.id,
+            [&cluster, &event, &author, &random_yeet_user, &origin_channel, &guild](auto callback)
+        {
+            // catch callback errors
+            if (callback.is_error())
+            {
+                event.reply("An error occurred. Please contact the maintainer.");
+                return;
+            }
+std::cout << "checked error" << std::endl;
+            // send yeet message and special message when author yeeted itself
+            if (author.user_id == random_yeet_user.id)
+            {
+                event.reply(author.get_mention() + std::string(" has yeeted itself."));
+            }
+            else
+            {
+                event.reply(author.get_mention() + std::string(" yeeted ") + random_yeet_user.get_mention());
+            }
+std::cout << "replied" << std::endl;
+            // wait the afk time penalty
+            std::this_thread::sleep_for(std::chrono::seconds(yeet_waiting_time));
+std::cout << "slept" << std::endl;
+            // todo
+            //  // dont need to move, when user has already moved
+            //  if () {}
 
-    // special message, if author yeeted itself
-    if (author.user_id == random_yeet_user.id)
-    {
-        event.reply(author.get_mention() + std::string(" has yeeted itself."));
-    }
-    else
-    {
-        event.reply(author.get_mention() + std::string(" yeeted ") + random_yeet_user.get_mention());
+            // move user back to original channel
+            cluster.guild_member_move(origin_channel, guild->id, random_yeet_user.id,
+                [&event](auto callback)
+            {
+                // catch callback errors
+                if (callback.is_error())
+                {
+                    event.reply("An error occurred. Please contact the maintainer.");
+                    return;
+                }
+            });
+        });
     }
 }
 
 void score(const dpp::slashcommand_t &event)
 {
     Database db;
-    auto user = db.get_user(event.command.member.user_id);
-    auto rank = std::to_string(user.score());
+
+    User user{};
+    try
+    {
+        user = db.get_user(event.command.member.user_id);
+    }
+    catch (std::exception &e)
+    {
+        event.reply("Error communicating with the database. Please contact the maintainer.");
+        return;
+    }
+
+    std::string rank = std::to_string(user.score());
+    std::ostringstream oss;
+    oss << std::setprecision(2) << std::noshowpoint << user.score();
+    std::string score = oss.str();
 
     auto embed = dpp::embed()
         .set_title("Yeet Profile")
-        .set_description("Your Score is **" + std::to_string(user.score()) + "** therefore is your Rank *" + rank + "*!")
+        .set_description("Your Score is **" + score + "** therefore is your Rank *" + rank + "*!")
         .add_field("Has Yeeted", std::to_string(user.has_yeeted), false)
-        .add_field("Been Yeeted", std::to_string(user.been_yeeted), false);
+        .add_field("Been Yeeted", std::to_string(user.been_yeeted), false)
+        .add_field("Currently immune", user.immunity ? "True" : "False", false);
 
-    auto msg = dpp::message(event.command.msg.channel_id, embed).set_reference(event.command.msg.id);
+    auto msg = dpp::message(event.command.msg.channel_id, embed);
     event.reply(msg);
 }
 
@@ -163,7 +262,7 @@ int main()
 
         if (command == "yeet")
         {
-            yeet(event);
+            yeet(event, bot);
         }
         else if (command == "score")
         {
@@ -205,7 +304,7 @@ int main()
                 bot.me.id);
             immunity_command.add_option(
                 dpp::command_option(
-                dpp::co_boolean, "value", "Weather the immunity should be toggled on or off.", true));
+                    dpp::co_boolean, "value", "Weather the immunity should be toggled on or off.", true));
 
             // Register the command
             bot.guild_command_create(yeet_command, 502183046594691072);
