@@ -257,7 +257,7 @@ void immunity(const dpp::slashcommand_t &event)
 
 int main()
 {
-    dpp::cluster bot("MTAwMDA0MDUxMjM4NTk3ODM5OQ.G0tNrg.F4IVqGj6kbsKOufLjt99jCP9zxN2w0ikAphH5k");
+    dpp::cluster bot(std::getenv("BOT_TOKEN"));
 
     bot.on_log(dpp::utility::cout_logger());
 
