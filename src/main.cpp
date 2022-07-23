@@ -312,14 +312,10 @@ int main()
                     dpp::co_boolean, "value", "Weather the immunity should be toggled on or off.", true));
 
             // Register the command
-            bot.guild_command_create(yeet_command, 502183046594691072);
-            // bot.global_command_create(yeet_command);
-            bot.guild_command_create(score_command, 502183046594691072);
-            // bot.global_command_create(score_command);
-            bot.guild_command_create(forget_command, 502183046594691072);
-            // bot.global_command_create(forget_command);
-            bot.guild_command_create(immunity_command, 502183046594691072);
-            // bot.global_command_create(immunity_command);
+            bot.global_command_create(yeet_command);
+            bot.global_command_create(score_command);
+            bot.global_command_create(forget_command);
+            bot.global_command_create(immunity_command);
         }
     });
 
