@@ -1,8 +1,6 @@
 #include <iostream>
 #include <iomanip>
 #include <random>
-#include <chrono>
-#include <thread>
 #include <cmath>
 
 #include <dpp/dpp.h>
@@ -11,13 +9,18 @@
 #include "../include/Database.h"
 
 
-/// The time interval in seconds, how long the user should remain in the afk channel
-const int yeet_waiting_time = 2;
-
 /// Global random device, used for generating unique random numbers
 std::random_device device;
 /// Global random number generator, used for generating unique random numbers
 std::mt19937 random_number_generator(device());
+
+/// Stores the actual yeet sound file
+uint8_t* robot = nullptr;
+/// Size of the yeet sound file
+size_t robot_size = 0;
+
+/// The time interval in seconds, how long the user should remain in the afk channel
+const int yeet_waiting_time = 2;
 
 
 void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
@@ -99,12 +102,12 @@ void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
         }
     }
 
-    // todo disable after debugging
-//    if (users.size() <= 1)
-//    {
-//        event.reply("You have to be at **least two people** in a voice channel, which have **immunity turned off**.");
-//        return;
-//    }
+    // ensure that yeeting only possible with more than 1 user
+    if (users.size() <= 1)
+    {
+        event.reply("You have to be at **least two people** in a voice channel, which have **immunity turned off**.");
+        return;
+    }
 
     // get a random user from users, which should be yeeted
     std::uniform_int_distribution<std::mt19937::result_type> distribution(0, users.size());
@@ -127,7 +130,7 @@ void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
     // no need to move user back, so don't bother
     if (not afk_channel)
     {
-        cluster.guild_member_move(afk_channel, guild->id, random_yeet_user.id, [&event](auto callback){
+        cluster.guild_member_move(afk_channel, guild->id, random_yeet_user.id, [event](auto callback){
             if (callback.is_error())
             {
                 event.reply("An error occurred. Please contact the maintainer.");
@@ -157,23 +160,25 @@ void yeet(const dpp::slashcommand_t &event, dpp::cluster& cluster)
                 event.reply(author.get_mention() + std::string(" yeeted ") + random_yeet_user.get_mention());
             }
 
-            // wait the afk time penalty
-            std::this_thread::sleep_for(std::chrono::seconds(yeet_waiting_time));
-
             // todo
             //  // dont need to move, when user has already moved
             //  if () {}
 
-            // move user back to original channel
-            cluster.guild_member_move(origin_channel, guild->id, random_yeet_user.id,
-                [&event](auto callback)
+            // wait the afk time penalty
+            new dpp::oneshot_timer(&cluster, yeet_waiting_time,
+                [&cluster, event, origin_channel, guild, random_yeet_user](auto callback)
             {
-                // catch callback errors
-                if (callback.is_error())
+                // move user back to original channel
+                cluster.guild_member_move(origin_channel, guild->id, random_yeet_user.id,
+                    [event](auto callback)
                 {
-                    event.reply("An error occurred. Please contact the maintainer.");
-                    return;
-                }
+                    // catch callback errors
+                    if (callback.is_error())
+                    {
+                        event.reply("An error occurred. Could not move the user back.");
+                        return;
+                    }
+                });
             });
         });
     }

@@ -6,6 +6,8 @@ project(mr_yeet)
 add_subdirectory(dependencies/DPP)
 add_subdirectory(dependencies/SQLiteCpp)
 
+#install(FILES yeet-sound.mp3 DESTINATION data) # todo also install/ move yeet-sound to build
+
 add_executable(${PROJECT_NAME}
         include/User.h
         src/Database.cpp include/Database.h

@@ -6,12 +6,12 @@ SQLite::Database Database::database = SQLite::Database("database.sqlite3", SQLit
 Database::Database()
 {
     auto statement =
-        "CREATE TABLE IF NOT EXISTS 'users' ( "
-        "   'id'            INTEGER NOT NULL UNIQUE, "
-        "   'has_yeeted'    INTEGER NOT NULL DEFAULT 0, "
-        "   'been_yeeted'   INTEGER NOT NULL DEFAULT 0, "
-        "   'immunity'      INTEGER NOT NULL DEFAULT 0, "
-        "   PRIMARY KEY('id') "
+        "CREATE TABLE IF NOT EXISTS 'users' ("
+        "   'id'            INTEGER NOT NULL UNIQUE,"
+        "   'has_yeeted'    INTEGER NOT NULL DEFAULT 0,"
+        "   'been_yeeted'   INTEGER NOT NULL DEFAULT 0,"
+        "   'immunity'      INTEGER NOT NULL DEFAULT 0,"
+        "   PRIMARY KEY('id')"
         ")";
     SQLite::Statement query(Database::database, statement);
 
